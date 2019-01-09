@@ -294,50 +294,57 @@ void do_mode0(UI_DATA* ud){
 }
 
 void do_mode1(UI_DATA* ud){
-  static int tempo=120;
-
   if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
     /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
-    lcd_putstr(0,1,"TEMPO=120"); /*モード1の初期表示*/
-    tempo=120;
-    tempo_compare = 3735 / tempo; /* 1000/(tempo * 16 / 60) を展開 */
+    lcd_putstr(0,1,"U30mD10mR5mL3m"); /*モード1の初期表示*/
   }
-
-  /*モード1は，真中ボタンが押されたら，MODE0に戻るだけの単純な処理*/
-  /*それに，beta2のバージョンでは，音楽再生機能の起動部分を追加*/
-  /*但し，main関数内で，キーのデバッグ表示を行っている*/
   switch(ud->sw){  /*モード内でのキー入力別操作*/
-  case KEY_LONG_C:  /* 中央キーの長押し */
+
+  case KEY_SHORT_U: /* 上短押し */
+    time_sec(1800);
+    break;
+    
+  case KEY_SHORT_D: /* 下短押し */
+    time_sec(600);
+    break;
+
+  case KEY_SHORT_L: /* 左短押し */
+    time_sec(300);
+    break;
+  case KEY_SHORT_R: /* 右短押し */
+    time_sec(180);
+    break;
+  }/* /switch */
+   /*モード1は，真中ボタンが押されたら，MODE0に戻る*/
+  switch(ud->sw){    /*モード内でのキー入力別操作*/
+  case KEY_LONG_C:   /* 中央キーの長押し */
     ud->mode=MODE_0; /* 次は，モード0に戻る */
     break;
-
-  case KEY_SHORT_L: /* 左のキーが押されたら,演奏開始*/
-    snd_play("CDEFEDC EFG^A_GFE C C C C !C!C!D!D!E!E!F!FEDC");
-    break;
-
-  case KEY_SHORT_R: /* 右のキーが押されたら,演奏終了*/
-    snd_stop();
-    break;
-
-  case KEY_SHORT_U: /* テンポUP */
-    tempo+=10;
-    if(tempo>=240)
-      tempo=240;
-    tempo_compare = 3735 / tempo;
-    lcd_putdec(6,1,3,tempo);
-    break;
-
-  case KEY_SHORT_D: /* テンポDOWN */
-    tempo-=10;
-    if(tempo<=60)
-      tempo=60;
-    tempo_compare = 3735 / tempo;
-    lcd_putdec(6,1,3,tempo);
-    break;
   }
 
+}
+  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
+void time_sec(int set){
+  int m=set/60;
+  int s=set%60;
+  lcd_putstr(0,1,"                   ");
+  char data[6];
+  //  long m,s;
+  long sec_hold=sec; 
+  while(set!=0){
+    //    s=set % 60;
+    //    m=(set/ 60); 
+    data[0]='0'+m/10;
+    data[1]='0'+m%10;
+    data[2]=':';
+    data[3]='0'+s/10;
+    data[4]='0'+s%10;
+    data[5]='\0';
+    lcd_putstr(16-8,1,data);
+    set--;
+  }
 }
 
 
