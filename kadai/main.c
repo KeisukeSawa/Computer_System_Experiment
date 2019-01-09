@@ -30,6 +30,11 @@ void int_timera(void){
 	      sec++;               /* secは，1秒ごとにインクリメントされる*/
 	}
 
+	// 24時になったらリセット
+	if(sec >= 86400){
+	  sec = 0;
+	}
+	
 #ifdef DEBUG
        { /*ボトムハーフ処理の余力チェック用コード*/
 	 volatile long int loop;
