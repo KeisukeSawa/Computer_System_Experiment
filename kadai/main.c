@@ -10,10 +10,14 @@ int tempo_compare=0;
 
 #define DEBUG          /* デバッグ中は，定義しておく */
 
-static unsigned int matrix_led_pattern[8]=
-  //{0x007e,0x0011,0x0011,0x0011,0x007e,0x7f00,0x4900,0x4900};
-{0x7e7e,0x1111,0x1111,0x0011,0x007e,0x7f00,0x4900,0x4900};
+// 初期起動時に何も表示されないようにする。
+//static unsigned int matrix_led_pattern[8]=
+//  //{0x007e,0x0011,0x0011,0x0011,0x007e,0x7f00,0x4900,0x4900};
+//{0x7e7e,0x1111,0x1111,0x0011,0x007e,0x7f00,0x4900,0x4900};
 /*列0〜7のデータ(詳細は，過去のリストを読め)*/
+
+static unsigned int matrix_led_pattern[8]=
+{0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
 /* int_timera() や int_imterv() の割込ルーチン(ボトムハーフの処理) */
 
@@ -177,6 +181,7 @@ typedef struct _UI_DATA{
 extern void do_mode0(UI_DATA* ui_data);
 extern void do_mode1(UI_DATA* ui_data);
 extern void do_mode2(UI_DATA* ui_data);
+extern void do_mode5(UI_DATA* ui_data); // add mode
 
 UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
   static UI_DATA ui_data={MODE_0,MODE_0,};
@@ -195,6 +200,8 @@ UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
   case MODE_2:
     do_mode2(&ui_data);
     break;
+  case MODE_5: // add mode
+    do_mode5(&ui_data);
   default:
     break;
  }
@@ -212,6 +219,9 @@ void do_mode0(UI_DATA* ud){
 
   /*モード0で必ず実行するコードを記述*/
   prev_next_mode_data=next_mode_data;
+
+  // マトリックスLEDを元に戻す
+  static unsigned int matrix_led_pattern[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
   if(ud->prev_mode!=ud->mode){  /* 他のモードからモード0に遷移した時に実行 */
     /*必要なら，何らかのモードの初期化処理*/
@@ -409,8 +419,27 @@ void do_mode4(UI_DATA* ud){
 // MODE_5（挟み将棋）
 void do_mode5(UI_DATA* ud){
 
+   lcd_clear();  //0123456789ABCDEF
+   lcd_putstr(0,0,"MODE5:syougi"); /*モード2の初期表示*/
+
+   matrix_led_pattern[0] = 0x8001;
+   matrix_led_pattern[1] = 0x8001;
+   matrix_led_pattern[2] = 0x8001;
+   matrix_led_pattern[3] = 0x8001;
+   matrix_led_pattern[4] = 0x8001;
+   matrix_led_pattern[5] = 0x8001;
+   matrix_led_pattern[6] = 0x8001;
+   matrix_led_pattern[7] = 0x8001;
+
+   
   
-  
+  /*モード5は，真中ボタンが押されたら，MODE0に戻る*/
+  switch(ud->sw){    /*モード内でのキー入力別操作*/
+  case KEY_LONG_C:   /* 中央キーの長押し */
+    ud->mode=MODE_0; /* 次は，モード0に戻る */
+    break;
+  }
+
   
 }
 
@@ -495,12 +524,4 @@ int main(void){
 	}
 	return 0;  /*この行は実行されないが、警告を出さないおまじない*/
 }
-
-/*************************************************************
- (1)  同様の指示で省略
- (2)  afp://iemac.ie.tokuyama.ac.jp/i0/nitta/2014exp4/9_2014beta_sample/ の
-     (以下も同様で省略)
- (3) 同様の指示で省略
- (4)〜(9) 初回と同様。
- ************************************************************/
 
