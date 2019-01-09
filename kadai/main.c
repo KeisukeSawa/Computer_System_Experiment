@@ -4,7 +4,6 @@ volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
 volatile long sec=86120;
-
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
 
@@ -307,53 +306,65 @@ void do_mode0(UI_DATA* ud){
 
 }
 
-void do_mode1(UI_DATA* ud){
-  static int tempo=120;
+  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
+void time_sec(int set){
+  static int m,s,l=0;
+  if(set!=0){
+    l=set;
+  }
+  if(set>=0){
+  lcd_putstr(0,1,"                   ");
+  m=l/60;
+  s=l%60;
+  char data[6];
+  //  long m,s;
+    //    s=set % 60;
+    //    m=(set/ 60); 
+    data[0]='0'+m/10;
+    data[1]='0'+m%10;
+    data[2]=':';
+    data[3]='0'+s/10;
+    data[4]='0'+s%10;
+    data[5]='\0';
+    lcd_putstr(16-8,1,data);
+    if(l>0)
+    l--;
+  }
+}
 
+void do_mode1(UI_DATA* ud){
   if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
     /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
-    lcd_putstr(0,1,"TEMPO=120"); /*モード1の初期表示*/
-    tempo=120;
-    tempo_compare = 3735 / tempo; /* 1000/(tempo * 16 / 60) を展開 */
+    lcd_putstr(0,1,"U30mD10mR5mL3m"); /*モード1の初期表示*/
   }
-
-  /*モード1は，真中ボタンが押されたら，MODE0に戻るだけの単純な処理*/
-  /*それに，beta2のバージョンでは，音楽再生機能の起動部分を追加*/
-  /*但し，main関数内で，キーのデバッグ表示を行っている*/
+  time_sec(0);
   switch(ud->sw){  /*モード内でのキー入力別操作*/
-  case KEY_LONG_C:  /* 中央キーの長押し */
+
+  case KEY_SHORT_U: /* 上短押し */
+    time_sec(1800);
+    break;
+    
+  case KEY_SHORT_D: /* 下短押し */
+    time_sec(600);
+    break;
+
+  case KEY_SHORT_L: /* 左短押し */
+    time_sec(300);
+    break;
+  case KEY_SHORT_R: /* 右短押し */
+    time_sec(180);
+    break;
+  }/* /switch */
+   /*モード1は，真中ボタンが押されたら，MODE0に戻る*/
+  switch(ud->sw){    /*モード内でのキー入力別操作*/
+  case KEY_LONG_C:   /* 中央キーの長押し */
     ud->mode=MODE_0; /* 次は，モード0に戻る */
-    break;
-
-  case KEY_SHORT_L: /* 左のキーが押されたら,演奏開始*/
-    snd_play("CDEFEDC EFG^A_GFE C C C C !C!C!D!D!E!E!F!FEDC");
-    break;
-
-  case KEY_SHORT_R: /* 右のキーが押されたら,演奏終了*/
-    snd_stop();
-    break;
-
-  case KEY_SHORT_U: /* テンポUP */
-    tempo+=10;
-    if(tempo>=240)
-      tempo=240;
-    tempo_compare = 3735 / tempo;
-    lcd_putdec(6,1,3,tempo);
-    break;
-
-  case KEY_SHORT_D: /* テンポDOWN */
-    tempo-=10;
-    if(tempo<=60)
-      tempo=60;
-    tempo_compare = 3735 / tempo;
-    lcd_putdec(6,1,3,tempo);
     break;
   }
 
 }
-
 
 /*時計表示のアルゴリズムの一部*/
 void show_sec(void){
@@ -383,17 +394,19 @@ void show_sec(void){
   data[3]='0'+m/10;
   data[4]='0'+m%10;
   data[5]=':';
-  data[6]='0'+ s/10;
-  data[7]='0'+ s%10;
+  data[6]='0'+s/10;
+  data[7]='0'+s%10;
   data[8]='\0';
   if(sec==86400) sec=0;
 
   lcd_putstr(16-8,1,data);
 }
-
+//藤井がdo_mode2まで使ってます
+volatile int tsetflag=FALSE;
+char set[9];
+int data[9];
 void do_mode2(UI_DATA* ud){
-
-  if(ud->prev_mode!=ud->mode || sec_flag==TRUE){ 
+  if(ud->prev_mode!=ud->mode ){ 
     /* 他のモード遷移した時に実行 もしくは，1秒ごとに表示*/
     /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();  //0123456789ABCDEF
@@ -401,11 +414,35 @@ void do_mode2(UI_DATA* ud){
     show_sec();
     sec_flag=FALSE;
   }
-
+  
+  if((sec_flag)==TRUE){
+    if(tsetflag==TRUE){
+      lcd_clear();
+      lcd_putstr(0,0,);
+       set[2]=':';
+      set[5]=':';
+     
+      lcd_putstr(8,1,data);
+      sec_flag=FALSE;
+    }
+    else{
+       lcd_clear();  //0123456789ABCDEF
+    lcd_putstr(0,0,"MODE2:secｦ ﾋｮｳｼﾞ"); /*モード2の初期表示*/
+    show_sec();
+    sec_flag=FALSE;
+    }
+  }
   /*モード2は，真中ボタンが押されたら，MODE0に戻る*/
   switch(ud->sw){    /*モード内でのキー入力別操作*/
   case KEY_LONG_C:   /* 中央キーの長押し */
     ud->mode=MODE_0; /* 次は，モード0に戻る */
+    break;
+    
+  case KEY_LONG_L:
+    tsetflag=TRUE;
+    break;
+  case KEY_LONG_R:
+    tsetflag=FALSE;
     break;
   }
 }
