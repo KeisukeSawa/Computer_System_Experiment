@@ -400,6 +400,14 @@ void do_mode2(UI_DATA* ud){
   }
 }
 
+// MODE_5¡Ê¶´¤ß¾­´ý¡Ë
+void do_mode5(UI_DATA* ud){
+
+  
+  
+  
+}
+
 
 
 int main(void){
