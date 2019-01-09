@@ -3,7 +3,7 @@
 volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
-volatile long sec=86100;
+volatile long sec=86120;
 
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
@@ -29,7 +29,6 @@ void int_timera(void){
 	      sec_flag = TRUE;
 	      sec++;               /* secは，1秒ごとにインクリメントされる*/
 	}
-
 	// 24時になったらリセット
 	if(sec >= 86400){
 	  sec = 0;
@@ -145,6 +144,11 @@ enum MENU_MODE{
   MODE_0,
   MODE_1,
   MODE_2,
+  MODE_3,
+  MODE_4,
+  MODE_5,
+  MODE_6,
+  MODE_7,
   MODE_OUT_OF_MAX
 };
 
@@ -401,6 +405,20 @@ void do_mode2(UI_DATA* ud){
     ud->mode=MODE_0; /* 次は，モード0に戻る */
     break;
   }
+}
+
+
+//mode_4 シューティング（倉本）
+void do_mode4(UI_DATA* ud){
+
+}
+
+// MODE_5（挟み将棋）
+void do_mode5(UI_DATA* ud){
+
+  
+  
+  
 }
 
 
