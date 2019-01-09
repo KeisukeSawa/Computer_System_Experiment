@@ -400,6 +400,10 @@ void do_mode2(UI_DATA* ud){
   }
 }
 
+//mode_4 シューティング（倉本）
+void do_mode4(UI_DATA* ud){
+}
+
 
 
 int main(void){
