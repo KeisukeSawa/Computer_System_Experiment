@@ -55,8 +55,6 @@ void int_timerv(void){         /* 約1[msec] ごとに呼び出されるようにする*/
        unsigned int i,p;
        /*スピーカ周りの値*/
 
-       //卒業研究で作成してくれたコードから改変。
-       //tempoを変更できるように改造 by T.nitta
        //下記のtempoやtempo_compareをconstでなく，変数にする。
        //但し，この計算をボトムハーフで毎回実行すると,処理が重いので
        //トップハーフで計算を行う。
@@ -155,8 +153,6 @@ enum MENU_MODE{
   MODE_OUT_OF_MAX
 };
 
-//うぅ。下記のKとkの見分け(大文字小文字の見分け)が付かずに，
-//１時間半の痛恨のロス(2011/12/19 00:37 by T.NITTA)
 enum SW_CODE{
   KEY_NONE=0,         //キー入力無し 
   KEY_SHORT_U=(1<<4), //上短押し
@@ -543,7 +539,6 @@ int main(void){
 	    /*ようなスピーカのサンプルコード。                        */
 	    /*スマートにスピーカを鳴らすのだったら，どこかで， フラグ */
 	    /*が立ったら， FLIP_SPEAKER_DIRECT_CONTROL();を実行する   */
-	    /*ようにするのだろうなぁ。きっと。多分。                  */
 	    if(ui_data!=NULL && ui_data->mode==MODE_1 && sw==KEY_SHORT_U){
 		FLIP_SPEAKER_DIRECT_CONTROL();
 	    }
