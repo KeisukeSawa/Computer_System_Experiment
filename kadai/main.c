@@ -400,8 +400,18 @@ void do_mode2(UI_DATA* ud){
   }
 }
 
+
 //mode_4 シューティング（倉本）
 void do_mode4(UI_DATA* ud){
+
+}
+
+// MODE_5（挟み将棋）
+void do_mode5(UI_DATA* ud){
+
+  
+  
+  
 }
 
 
