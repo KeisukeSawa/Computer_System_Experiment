@@ -144,6 +144,11 @@ enum MENU_MODE{
   MODE_0,
   MODE_1,
   MODE_2,
+  MODE_3,
+  MODE_4,
+  MODE_5,
+  MODE_6,
+  MODE_7,
   MODE_OUT_OF_MAX
 };
 
