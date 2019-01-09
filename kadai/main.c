@@ -3,7 +3,7 @@
 volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
-volatile long sec=86100;
+volatile long sec=86120;
 
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
@@ -29,7 +29,6 @@ void int_timera(void){
 	      sec_flag = TRUE;
 	      sec++;               /* secは，1秒ごとにインクリメントされる*/
 	}
-
 	// 24時になったらリセット
 	if(sec >= 86400){
 	  sec = 0;
