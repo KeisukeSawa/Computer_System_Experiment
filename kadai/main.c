@@ -4,7 +4,6 @@ volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
 volatile long sec=86120;
-
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
 
@@ -387,10 +386,12 @@ void show_sec(void){
 
   lcd_putstr(16-8,1,data);
 }
-
+//藤井がdo_mode2まで使ってます
+volatile int tsetflag=FALSE;
+char set[9];
+int data[9];
 void do_mode2(UI_DATA* ud){
-
-  if(ud->prev_mode!=ud->mode || sec_flag==TRUE){ 
+  if(ud->prev_mode!=ud->mode ){ 
     /* 他のモード遷移した時に実行 もしくは，1秒ごとに表示*/
     /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();  //0123456789ABCDEF
@@ -398,11 +399,35 @@ void do_mode2(UI_DATA* ud){
     show_sec();
     sec_flag=FALSE;
   }
-
+  
+  if((sec_flag)==TRUE){
+    if(tsetflag==TRUE){
+      lcd_clear();
+      lcd_putstr(0,0,);
+       set[2]=':';
+      set[5]=':';
+     
+      lcd_putstr(8,1,data);
+      sec_flag=FALSE;
+    }
+    else{
+       lcd_clear();  //0123456789ABCDEF
+    lcd_putstr(0,0,"MODE2:secｦ ﾋｮｳｼﾞ"); /*モード2の初期表示*/
+    show_sec();
+    sec_flag=FALSE;
+    }
+  }
   /*モード2は，真中ボタンが押されたら，MODE0に戻る*/
   switch(ud->sw){    /*モード内でのキー入力別操作*/
   case KEY_LONG_C:   /* 中央キーの長押し */
     ud->mode=MODE_0; /* 次は，モード0に戻る */
+    break;
+    
+  case KEY_LONG_L:
+    tsetflag=TRUE;
+    break;
+  case KEY_LONG_R:
+    tsetflag=FALSE;
     break;
   }
 }
