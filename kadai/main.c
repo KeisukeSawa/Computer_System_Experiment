@@ -297,6 +297,32 @@ void do_mode0(UI_DATA* ud){
 
 }
 
+  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
+void time_sec(int set){
+  static int m,s,l=0;
+  if(set!=0){
+    l=set;
+  }
+  if(set>=0){
+  lcd_putstr(0,1,"                   ");
+  m=l/60;
+  s=l%60;
+  char data[6];
+  //  long m,s;
+    //    s=set % 60;
+    //    m=(set/ 60); 
+    data[0]='0'+m/10;
+    data[1]='0'+m%10;
+    data[2]=':';
+    data[3]='0'+s/10;
+    data[4]='0'+s%10;
+    data[5]='\0';
+    lcd_putstr(16-8,1,data);
+    if(l>0)
+    l--;
+  }
+}
+
 void do_mode1(UI_DATA* ud){
   if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
     /*必要なら，何らかのモードの初期化処理*/
@@ -304,6 +330,7 @@ void do_mode1(UI_DATA* ud){
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
     lcd_putstr(0,1,"U30mD10mR5mL3m"); /*モード1の初期表示*/
   }
+  time_sec(0);
   switch(ud->sw){  /*モード内でのキー入力別操作*/
 
   case KEY_SHORT_U: /* 上短押し */
@@ -329,28 +356,6 @@ void do_mode1(UI_DATA* ud){
   }
 
 }
-  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
-void time_sec(int set){
-  int m=set/60;
-  int s=set%60;
-  lcd_putstr(0,1,"                   ");
-  char data[6];
-  //  long m,s;
-  long sec_hold=sec; 
-  while(set!=0){
-    //    s=set % 60;
-    //    m=(set/ 60); 
-    data[0]='0'+m/10;
-    data[1]='0'+m%10;
-    data[2]=':';
-    data[3]='0'+s/10;
-    data[4]='0'+s%10;
-    data[5]='\0';
-    lcd_putstr(16-8,1,data);
-    set--;
-  }
-}
-
 
 /*時計表示のアルゴリズムの一部*/
 void show_sec(void){
@@ -380,8 +385,8 @@ void show_sec(void){
   data[3]='0'+m/10;
   data[4]='0'+m%10;
   data[5]=':';
-  data[6]='0'+ s/10;
-  data[7]='0'+ s%10;
+  data[6]='0'+s/10;
+  data[7]='0'+s%10;
   data[8]='\0';
   if(sec==86400) sec=0;
 
