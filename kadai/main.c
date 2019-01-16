@@ -303,7 +303,7 @@ void do_mode0(UI_DATA* ud){
 }
 
   /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
-void time_sec(int set){
+void time(int set){
   static int m,s,l=0;
   if(set!=0){
     l=set;
@@ -335,22 +335,22 @@ void do_mode1(UI_DATA* ud){
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
     lcd_putstr(0,1,"U30mD10mR5mL3m"); /*モード1の初期表示*/
   }
-  time_sec(0);
+  time(0);
   switch(ud->sw){  /*モード内でのキー入力別操作*/
 
   case KEY_SHORT_U: /* 上短押し */
-    time_sec(1800);
+    time(1800);
     break;
     
   case KEY_SHORT_D: /* 下短押し */
-    time_sec(600);
+    time(600);
     break;
 
   case KEY_SHORT_L: /* 左短押し */
-    time_sec(300);
+    time(300);
     break;
   case KEY_SHORT_R: /* 右短押し */
-    time_sec(180);
+    time(180);
     break;
   }/* /switch */
    /*モード1は，真中ボタンが押されたら，MODE0に戻る*/
