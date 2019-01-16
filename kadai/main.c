@@ -203,8 +203,10 @@ UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
     break;
   case MODE_5: // add mode
     do_mode5(&ui_data);
+    break;
   case MODE_7: // add mode
     do_mode7(&ui_data);
+    break;
   default:
     break;
  }
@@ -627,31 +629,86 @@ void do_mode4(UI_DATA* ud){
 }
 
 // MODE_5（挟み将棋）
+
+
+// MODE_5（挟み将棋）
 void do_mode5(UI_DATA* ud){
-
-   lcd_clear();  //0123456789ABCDEF
-   lcd_putstr(0,0,"MODE5:syougi"); /*モード2の初期表示*/
-
-   matrix_led_pattern[0] = 0x8001;
-   matrix_led_pattern[1] = 0x8001;
-   matrix_led_pattern[2] = 0x8001;
-   matrix_led_pattern[3] = 0x8001;
-   matrix_led_pattern[4] = 0x8001;
-   matrix_led_pattern[5] = 0x8001;
-   matrix_led_pattern[6] = 0x8001;
-   matrix_led_pattern[7] = 0x8001;
-
-   
   
-  /*モード5は，真中ボタンが押されたら，MODE0に戻る*/
-  switch(ud->sw){    /*モード内でのキー入力別操作*/
-  case KEY_LONG_C:   /* 中央キーの長押し */
-    ud->mode=MODE_0; /* 次は，モード0に戻る */
-    break;
+  // matrix_led_pattern[0] = 0x8001;
+  // matrix_led_pattern[1] = 0x8001;
+  // matrix_led_pattern[2] = 0x8001;
+  // matrix_led_pattern[3] = 0x8001;
+  // matrix_led_pattern[4] = 0x8001;
+  // matrix_led_pattern[5] = 0x8001;
+  // matrix_led_pattern[6] = 0x8001;
+  // matrix_led_pattern[7] = 0x8001;
+  
+  static int row;
+  static int line;
+  static int play[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
+  static int koma[8]={0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001};
+  static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
+  int i;
+
+  if(ud->prev_mode!=ud->mode){
+    lcd_clear();
+    lcd_putstr(0,0,"MODE5:syougi");
+    row=0;
+    line=7;
+    for(i=0;i<=7;i++){
+      play[i]=0x0000;
+    }
+    play[row]=0x8000;
   }
 
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
+
+    case KEY_LONG_C:  /* 中央キーの長押し */
+      ud->mode=MODE_0; /* 次は，モード0に戻る */
+      break;
+    
+    case KEY_SHORT_R: /* 右短押し*/
+      if(row < 7){
+	row++;
+	play[row]=play[row] | 0x8080;
+	play[row-1]=play[row-1] & ~(0x8080);
+      }
+      break;
+
+  case KEY_SHORT_L:/* 中央キーの短押し */
+    if(row > 0){
+      row--;
+      play[row]=play[row] | 0x8080;
+      play[row+1]=play[row+1] & ~(0x8080);
+    }
+    break;
+
+  case KEY_SHORT_U: /* 上キーの短押し */
+    if(line > 0){
+      line--;
+      // play[row]= play[row];
+      //play[line]=play[line] | 0x8080;
+      // play[line]=play[line] & ~(0x8080);
+    }
+    break;
+
+  case KEY_SHORT_D: /* 下キーの短押し */
+    if(line < 7)
+      line++;
+    
+  }
+
+  for(i=0; i<=7; i++){
+    all[i] = play[i] | koma[i];
+  }
   
+
+  for(i=0; i<=7; i++){
+    matrix_led_pattern[i]=all[i];
+  }
+
 }
+
 // char da[]="ｲｰﾄ";
 char da[5];
 
