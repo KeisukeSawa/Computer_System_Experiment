@@ -475,39 +475,47 @@ void do_mode2(UI_DATA* ud){
 
 //mode_4 シューティング（倉本）
 void do_mode4(UI_DATA* ud){
-  
-  static int player;
+
+  static int row;
+  static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
   int i;
   
   if(ud->prev_mode!=ud->mode){
     lcd_clear();
     lcd_putstr(0,0,"MODE4:SHOOTING");
     lcd_putstr(0,1,"SCORE=0");
-    player=3;
+    row=3;
     for(i=0;i<=7;i++){
-      matrix_led_pattern[i]=0x0000;
+      all[i]=0x0000;
     }
+    all[row]=0x8000;
   }
   switch(ud->sw){  /*モード内でのキー入力別操作*/
-  case KEY_SHORT_R:
-    if(player <= 7){
-      player++;
+
+  case KEY_LONG_C:  /* 中央キーの長押し */
+    ud->mode=MODE_0; /* 次は，モード0に戻る */
+    break;
+    
+  case KEY_SHORT_R: /* 右短押し  自機の操作*/
+    if(row < 7){
+      row++;
+      all[row]=all[row] | 0x8000;
+      all[row-1]=all[row-1] & ~(0x8000);
     }
-    matrix_led_pattern[player]=0x1111;
-    matrix_led_pattern[player-1]=0x0000;
     break;
 
-  case KEY_SHORT_C:
-    if(player >= 0){
-      player--;
+  case KEY_SHORT_C:/* 中央キーの短押し  自機の操作*/
+    if(row > 0){
+      row--;
+      all[row]=all[row] | 0x8000;
+      all[row+1]=all[row+1] & ~(0x8000);
     }
-    matrix_led_pattern[player]=0x1111;
-    matrix_led_pattern[player+1]=0x0000;
     break;
+    
   }
-
-  matrix_led_pattern[player]=0x1111;
-
+  for(i=0; i<=7; i++){
+    matrix_led_pattern[i]=all[i];
+  }
 }
 
 // MODE_5（挟み将棋）
