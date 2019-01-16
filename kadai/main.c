@@ -335,7 +335,7 @@ void time_sec(int set){
   lcd_putstr(0,1,"                   ");
   char data[6];
   //  long m,s;
-  long sec_hold=sec; 
+  // long sec_hold=sec; 
   while(set!=0){
     //    s=set % 60;
     //    m=(set/ 60); 
@@ -388,8 +388,7 @@ void show_sec(void){
 }
 //藤井がdo_mode2まで使ってます
 volatile int tsetflag=FALSE;
-char set[9];
-int data[9];
+int data=1;
 void do_mode2(UI_DATA* ud){
   if(ud->prev_mode!=ud->mode ){ 
     /* 他のモード遷移した時に実行 もしくは，1秒ごとに表示*/
@@ -403,11 +402,10 @@ void do_mode2(UI_DATA* ud){
   if((sec_flag)==TRUE){
     if(tsetflag==TRUE){
       lcd_clear();
-      lcd_putstr(0,0,);
-       set[2]=':';
-      set[5]=':';
-     
-      lcd_putstr(8,1,data);
+      // lcd_putstr(0,0,':');
+      //lcd_putstr(0,2,':');
+      // lcd_putdec(0,1,data);
+      // lcd_putstr(8,1,data);
       sec_flag=FALSE;
     }
     else{
