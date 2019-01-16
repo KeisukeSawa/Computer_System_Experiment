@@ -409,10 +409,20 @@ void show_sec(void){
 
   lcd_putstr(16-10,1,data);
 }
+
+
 //藤井がdo_mode2まで使ってます
+char astrisk[9];
+char settime[9];
+int tim[9];
 volatile int tsetflag=FALSE;
-int data=1;
+int data=1,ast=7;
 void do_mode2(UI_DATA* ud){
+  settime[2]=':';
+  settime[5]=':';
+  astrisk[8]='\0';
+  int i=0;
+long sec_henkou=0;
   if(ud->prev_mode!=ud->mode ){ 
     /* 他のモード遷移した時に実行 もしくは，1秒ごとに表示*/
     /*必要なら，何らかのモードの初期化処理*/
@@ -420,15 +430,130 @@ void do_mode2(UI_DATA* ud){
     lcd_putstr(0,0,"MODE2:secｦ ﾋｮｳｼﾞ"); /*モード2の初期表示*/
     show_sec();
     sec_flag=FALSE;
+
+     for(i=0;i<8;i++){
+       astrisk[i]=' ';
+       tim[i]=0;
+  }
   }
   
   if((sec_flag)==TRUE){
     if(tsetflag==TRUE){
       lcd_clear();
-      // lcd_putstr(0,0,':');
-      //lcd_putstr(0,2,':');
-      // lcd_putdec(0,1,data);
-      // lcd_putstr(8,1,data);
+      astrisk[ast]='*';
+      
+      switch(ud->sw){
+      case KEY_SHORT_R:
+	astrisk[ast]=' ';
+	if((ast==1) || (ast==4)){
+	  ast=ast+2;
+	}
+	else if(ast==7){
+	  ast=0;
+	}
+	else{
+	  ast++;
+	}
+	
+	break;
+    case KEY_SHORT_L:
+      astrisk[ast]=' ';
+      	if((ast==3) || (ast==6)){
+	  ast=ast-2;
+	}
+	else if(ast==0){
+	  ast=7;
+	}
+	else{
+	  ast--;
+	}
+	
+	break;
+	  case KEY_SHORT_U:
+	    if(ast==0){
+	      if(tim[ast]==2){
+		tim[ast]=0;
+	      }
+	      else if(tim[ast]==1){	
+		tim[ast]+=1;
+		tim[ast+1]=0;
+	      }
+	      else
+		tim[ast]+=1;
+	    }
+	    if(ast==1){
+	      if(tim[ast-1]==2)
+		if(tim[ast]==3){
+		  tim[ast]=0;
+		}
+		else{
+		  tim[ast]+=1;
+		}
+	      else if(tim[ast]==9){
+		tim[ast]=0;
+	      }
+	      else
+		tim[ast]+=1;
+	    }
+	    
+	    if((ast==4) || (ast==7)){
+	      if(tim[ast]==9){
+		tim[ast]=0;
+	      }
+	      else
+		tim[ast]+=1;
+	    }
+	    if(ast==3 || ast==6){
+	      if(tim[ast]==5)
+		tim[ast]=0;
+	      else
+		tim[ast]+=1;
+	    }
+	    break;
+      case KEY_SHORT_D:
+	if(ast==0){
+	      if(tim[ast]==0){
+		tim[ast]=2;
+		tim[ast+1]=0;
+	      }
+	      else 	
+		tim[ast]-=1;
+	    }
+	    if(ast==1){
+	      if(tim[ast-1]==2)
+	      if(tim[ast]==0){
+		  tim[ast]=3;
+		}
+		else
+		  tim[ast]-=1;
+	      else
+		if(tim[ast]==0)
+		  tim[ast]=9;
+		else
+		  tim[ast]-=1;
+	      
+	    }
+	    if((ast==4) || (ast==7)){
+	      if(tim[ast]==0){
+		tim[ast]=9;
+	      }
+	      else
+		tim[ast]-=1;
+	    }
+	    if(ast==3 || ast==6){
+	      if(tim[ast]==0)
+		tim[ast]=5;
+	      else
+		tim[ast]-=1;
+	    }
+	    break;
+      }
+      
+      lcd_putstr(8,0,astrisk);
+      for(i=0;i<9;i++)
+	if((i!=2) && (i!=5))
+	 settime[i]='0'+tim[i];
+      lcd_putstr(8,1,settime);
       sec_flag=FALSE;
     }
     else{
@@ -448,6 +573,8 @@ void do_mode2(UI_DATA* ud){
     tsetflag=TRUE;
     break;
   case KEY_LONG_R:
+    sec_henkou=tim[0]*36000+tim[1]*3600+tim[3]*600+tim[4]*60+tim[6]*10+tim[7];
+    sec=sec_henkou;
     tsetflag=FALSE;
     break;
   }
