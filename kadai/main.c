@@ -1,5 +1,6 @@
 #include "libs.h"       /* 前のmy3664hの内容は，libs/libs.hへ統合した */
-
+#include <stdio.h>
+#include <stdlib.h> // rand
 volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
@@ -178,6 +179,7 @@ extern void do_mode1(UI_DATA* ui_data);
 extern void do_mode2(UI_DATA* ui_data);
 extern void do_mode4(UI_DATA* ui_data);
 extern void do_mode5(UI_DATA* ui_data); // add mode
+extern void do_mode7(UI_DATA* ui_data);
 
 UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
   static UI_DATA ui_data={MODE_0,MODE_0,};
@@ -201,6 +203,8 @@ UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
     break;
   case MODE_5: // add mode
     do_mode5(&ui_data);
+  case MODE_7: // add mode
+    do_mode7(&ui_data);
   default:
     break;
  }
@@ -307,7 +311,7 @@ void do_mode0(UI_DATA* ud){
 }
 
   /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
-void time(int set){
+void mode1_time(int set){
   static int m,s,l=0;
   if(set!=0){
     l=set;
@@ -339,22 +343,22 @@ void do_mode1(UI_DATA* ud){
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
     lcd_putstr(0,1,"U30mD10mR5mL3m"); /*モード1の初期表示*/
   }
-  time(0);
+  //  time(0);
   switch(ud->sw){  /*モード内でのキー入力別操作*/
 
   case KEY_SHORT_U: /* 上短押し */
-    time(1800);
+    mode1_time(1800);
     break;
     
   case KEY_SHORT_D: /* 下短押し */
-    time(600);
+    mode1_time(600);
     break;
 
   case KEY_SHORT_L: /* 左短押し */
-    time(300);
+    mode1_time(300);
     break;
   case KEY_SHORT_R: /* 右短押し */
-    time(180);
+    mode1_time(180);
     break;
   }/* /switch */
    /*モード1は，真中ボタンが押されたら，MODE0に戻る*/
@@ -531,6 +535,65 @@ void do_mode5(UI_DATA* ud){
   }
 
   
+}
+// char da[]="ｲｰﾄ";
+char da[5];
+
+char dat[6];
+
+void do_mode7(UI_DATA* ud){
+    char x='0', y='0', z='0';
+    int a=0, b=0, c=0;
+    int n=0, m=0;
+    da[1]='e';
+    da[2]='a';
+da[3]='t';
+da[4]='\0';
+dat[1]='b';
+dat[2]='i';
+dat[3]='t';
+dat[4]='e';
+dat[5]='\0';
+    /* 3桁の乱数値を生成 */
+    // srand((unsigned int)time(NULL));
+    x = (char)(rand()%10);
+    do {
+      y = (char)(rand()%10);
+    } while(y == x);
+    do {
+      z = (char)(rand()%10);
+    } while(z == x||z == y);
+
+    for (;;) {
+
+        /* ユーザ入力を受け、1の位、10の位、100の位に分ける */
+      
+        /* 不正な入力値をはじく */
+        if (n < 12||n > 987||a == b||a == c||b == c)
+            continue;
+
+        /* 「イート」の数 */
+        n = 0;
+        if (a == x) n++;
+        if (b == y) n++;
+        if (c == z) n++;
+	da[0]='0'+n;
+        /* 「バイト」の数 */
+        m = 0;
+        if (a == y || a == z) m++;
+        if (b == x || b == y) m++;
+        if (c == x || c == y) m++;
+	dat[0]='0'+m;
+        if (n != 3){
+	  lcd_putstr(1,1,da);
+	  lcd_putstr(7,1,dat);
+	}
+        else {
+	  // putstr("Hit!\n");
+            break;
+        }
+    }
+    //return 0;
 }
 
 
