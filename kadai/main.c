@@ -176,6 +176,7 @@ typedef struct _UI_DATA{
 extern void do_mode0(UI_DATA* ui_data);
 extern void do_mode1(UI_DATA* ui_data);
 extern void do_mode2(UI_DATA* ui_data);
+extern void do_mode4(UI_DATA* ui_data);
 extern void do_mode5(UI_DATA* ui_data); // add mode
 
 UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
@@ -194,6 +195,9 @@ UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
     break;
   case MODE_2:
     do_mode2(&ui_data);
+    break;
+  case MODE_4:
+    do_mode4(&ui_data);
     break;
   case MODE_5: // add mode
     do_mode5(&ui_data);
@@ -349,10 +353,10 @@ void do_mode1(UI_DATA* ud){
     break;
 
   case KEY_SHORT_L: /* 左短押し */
-    mode1_time(300);
+    mode1_time(180);
     break;
   case KEY_SHORT_R: /* 右短押し */
-    mode1_time(180);
+    mode1_time(300);
     break;
   default:
     mode1_time(0);
@@ -448,6 +452,38 @@ void do_mode2(UI_DATA* ud){
 
 //mode_4 シューティング（倉本）
 void do_mode4(UI_DATA* ud){
+  
+  static int player;
+  int i;
+  
+  if(ud->prev_mode!=ud->mode){
+    lcd_clear();
+    lcd_putstr(0,0,"MODE4:SHOOTING");
+    lcd_putstr(0,1,"SCORE=0");
+    player=3;
+    for(i=0;i<=7;i++){
+      matrix_led_pattern[i]=0x0000;
+    }
+  }
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
+  case KEY_SHORT_R:
+    if(player <= 7){
+      player++;
+    }
+    matrix_led_pattern[player]=0x1111;
+    matrix_led_pattern[player-1]=0x0000;
+    break;
+
+  case KEY_SHORT_C:
+    if(player >= 0){
+      player--;
+    }
+    matrix_led_pattern[player]=0x1111;
+    matrix_led_pattern[player+1]=0x0000;
+    break;
+  }
+
+  matrix_led_pattern[player]=0x1111;
 
 }
 
