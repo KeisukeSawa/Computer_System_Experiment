@@ -710,25 +710,27 @@ void do_mode5(UI_DATA* ud){
 }
 
 // char da[]="ｲｰﾄ";
+
 char da[5];
 
 char dat[6];
-
-void do_mode7(UI_DATA* ud){
+char ans[4];
+void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     char x='0', y='0', z='0';
-    int a=0, b=0, c=0;
+    int a=1, b=2, c=3;
     int n=0, m=0;
+    int i=1;
     da[1]='e';
     da[2]='a';
-da[3]='t';
-da[4]='\0';
-dat[1]='b';
-dat[2]='i';
-dat[3]='t';
-dat[4]='e';
-dat[5]='\0';
+    da[3]='t';
+    da[4]='\0';
+    dat[1]='b';
+    dat[2]='i';
+    dat[3]='t';
+    dat[4]='e';
+    dat[5]='\0';
     /* 3桁の乱数値を生成 */
-    // srand((unsigned int)time(NULL));
+    srand(sec);
     x = (char)(rand()%10);
     do {
       y = (char)(rand()%10);
@@ -736,21 +738,93 @@ dat[5]='\0';
     do {
       z = (char)(rand()%10);
     } while(z == x||z == y);
+    for(;;){
+       /* 不正な入力値をはじく */
 
-    for (;;) {
+    lcd_putdec(0,13,1,a);
+    lcd_putdec(0,14,1,b);
+    lcd_putdec(0,15,1,c);
+     
+      switch(i){
+      case 1:
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-        /* ユーザ入力を受け、1の位、10の位、100の位に分ける */
-      
-        /* 不正な入力値をはじく */
-        if (n < 12||n > 987||a == b||a == c||b == c)
-            continue;
+	case KEY_SHORT_U: /* 上短押し */
+	  a++;
+	  break;
+    
+	case KEY_SHORT_D: /* 下短押し */
+	  a--;
+	  break;
 
+	case KEY_SHORT_L: /* 左短押し */
+	  break;
+	case KEY_SHORT_R: /* 右短押し */
+	  i=2;
+	  break;
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	}/* /switch */
+	break;
+
+      case 2:
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
+
+	case KEY_SHORT_U: /* 上短押し */
+	  b++;
+	  break;
+    
+	case KEY_SHORT_D: /* 下短押し */
+	  b--;
+	  break;
+
+	case KEY_SHORT_L: /* 左短押し */
+	  i=1;
+	  break;
+	case KEY_SHORT_R: /* 右短押し */
+	  i=3;
+	  break;
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	}/* /switch */
+	break;
+
+      case 3:
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
+
+	case KEY_SHORT_U: /* 上短押し */
+	  c++;
+	  break;
+    
+	case KEY_SHORT_D: /* 下短押し */
+	  c--;
+	  break;
+
+	case KEY_SHORT_L: /* 左短押し */
+	  i=2;
+	  break;
+	case KEY_SHORT_R: /* 右短押し */
+	  break;
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	}/* /switch */
+	break;
+      }
+       
+    
+    }
+    /*  if(KEY_SHORT_U) 
+      if (n < 12||n > 987||a == b||a == c||b == c)
+	continue;*/
         /* 「イート」の数 */
-        n = 0;
-        if (a == x) n++;
-        if (b == y) n++;
-        if (c == z) n++;
-	da[0]='0'+n;
+      n = 0;
+      if (a == x) n++;
+      if (b == y) n++;
+      if (c == z) n++;
+      da[0]='0'+n;
         /* 「バイト」の数 */
         m = 0;
         if (a == y || a == z) m++;
@@ -758,16 +832,17 @@ dat[5]='\0';
         if (c == x || c == y) m++;
 	dat[0]='0'+m;
         if (n != 3){
-	  lcd_putstr(1,1,da);
+	  lcd_putstr(0,1,da);
 	  lcd_putstr(7,1,dat);
 	}
-        else {
-	  // putstr("Hit!\n");
-            break;
-        }
-    }
+        else 
+	  lcd_putstr(0,1,ans);
+	 
+        
     //return 0;
 }
+
+
 
 
 
