@@ -629,25 +629,16 @@ void do_mode4(UI_DATA* ud){
 }
 
 // MODE_5（挟み将棋）
-
-
-// MODE_5（挟み将棋）
 void do_mode5(UI_DATA* ud){
-  
-  // matrix_led_pattern[0] = 0x8001;
-  // matrix_led_pattern[1] = 0x8001;
-  // matrix_led_pattern[2] = 0x8001;
-  // matrix_led_pattern[3] = 0x8001;
-  // matrix_led_pattern[4] = 0x8001;
-  // matrix_led_pattern[5] = 0x8001;
-  // matrix_led_pattern[6] = 0x8001;
-  // matrix_led_pattern[7] = 0x8001;
-  
+
   static int row;
   static int line;
   static int play[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
   static int koma[8]={0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001};
   static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
+  int playermode = 11; 
+  // int playerrow = 0;
+  // int playerline = 0;
   int i;
 
   if(ud->prev_mode!=ud->mode){
@@ -669,32 +660,62 @@ void do_mode5(UI_DATA* ud){
     
     case KEY_SHORT_R: /* 右短押し*/
       if(row < 7){
-	row++;
-	play[row]=play[row] | 0x8080;
-	play[row-1]=play[row-1] & ~(0x8080);
+      int red = 0x0000 | (1 << (line));
+      int green =  0x0000 | (1 << (line+8));
+      row++;
+      play[row] = red | green;
+      play[row-1] = 0x0000;
       }
       break;
 
-  case KEY_SHORT_L:/* 中央キーの短押し */
+  case KEY_SHORT_L:/* 左キーの短押し */
     if(row > 0){
+      int red = 0x0000 | (1 << (line));
+      int green =  0x0000 | (1 << (line+8));
       row--;
-      play[row]=play[row] | 0x8080;
-      play[row+1]=play[row+1] & ~(0x8080);
+      play[row] = red | green;
+      play[row+1] = 0x0000;
     }
     break;
 
   case KEY_SHORT_U: /* 上キーの短押し */
     if(line > 0){
+      int red = 0x0000 | (1 << (line-1));
+      int green =  0x0000 | (1 << (line-1+8));
+      play[row] = red | green;
       line--;
-      // play[row]= play[row];
-      //play[line]=play[line] | 0x8080;
-      // play[line]=play[line] & ~(0x8080);
     }
     break;
 
   case KEY_SHORT_D: /* 下キーの短押し */
-    if(line < 7)
+    if(line < 7){
+      int red = 0x0000 | (1 << (line+1));
+      int green =  0x0000 | (1 << (line+1+8));
+      play[row] = red | green;
       line++;
+    }
+    break;
+
+  case KEY_SHORT_C: /* 中央キーの短押し */
+    if(playermode == 11){
+      //playerrow = row;
+      //playerline = line;
+      playermode = 12;
+    }
+    else if(playermode == 12){
+      // 次はrow,lineを所得→緑に書き換え
+      // その後、plyerrowとplayerlineを元に、元の緑をnullに戻す
+      
+      
+      
+    }
+    else if(playermode == 21){
+
+    }
+    else if(playermode == 22){
+      
+    }
+    break;
     
   }
 
