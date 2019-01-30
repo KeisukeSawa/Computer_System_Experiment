@@ -1,4 +1,4 @@
-#include "libs.h"       /* ����my3664h�����Ƥϡ�libs/libs.h�����礷�� */
+#include "libs.h"       /* 前のmy3664hの内容は，libs/libs.hへ統合した */
 #include <stdio.h>
 #include <stdlib.h> // rand
 volatile int tma_flag=FALSE;
@@ -8,88 +8,88 @@ volatile long sec=86120;
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
 
-#define DEBUG          /* �ǥХå���ϡ�������Ƥ��� */
+#define DEBUG          /* デバッグ中は，定義しておく */
 
-// �����ư���˲���ɽ������ʤ��褦�ˤ��롣
+// 初期起動時に何も表示されないようにする。
 //static unsigned int matrix_led_pattern[8]=
 //  //{0x007e,0x0011,0x0011,0x0011,0x007e,0x7f00,0x4900,0x4900};
 //{0x7e7e,0x1111,0x1111,0x0011,0x007e,0x7f00,0x4900,0x4900};
-/*��0��7�Υǡ���(�ܺ٤ϡ����Υꥹ�Ȥ��ɤ�)*/
+/*列0〜7のデータ(詳細は，過去のリストを読め)*/
 
 static unsigned int matrix_led_pattern[8]=
 {0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
-/* int_timera() �� int_imterv() �γ���롼����(�ܥȥ�ϡ��դν���) */
+/* int_timera() や int_imterv() の割込ルーチン(ボトムハーフの処理) */
 
-#pragma interrupt                   /*��������롼����Ǥ��뤳�Ȥλ���*/
+#pragma interrupt                   /*割込処理ルーチンであることの指定*/
 void int_timera(void){              
         volatile static int count=0;
-	BIT_CLR(IRR1,6);      /* ����Υ�����A�����ߥե饰���ꥢ */
+	BIT_CLR(IRR1,6);      /* 本来のタイマA割り込みフラグクリア */
 	tma_flag = TRUE;
-	//	EI();         /* ɬ�פ˱����� EI()��¹�  */
-	/*32��ƤӽФ��줿�顤ifʸ���椬�¹Ԥ���ơ�sec_flag��ͭ���ˤʤ�*/
+	//	EI();         /* 必要に応じて EI()を実行  */
+	/*32回呼び出されたら，if文の中が実行されて，sec_flagが有効になる*/
 	if(++count >= 32){
 	      count=0;
 	      sec_flag = TRUE;
-	      sec++;               /* sec�ϡ�1�ä��Ȥ˥��󥯥���Ȥ����*/
+	      sec++;               /* secは，1秒ごとにインクリメントされる*/
 	}
-	// 24���ˤʤä���ꥻ�å�
+	// 24時になったらリセット
 	if(sec >= 86400){
 	  sec = 0;
 	}
 	
 #ifdef DEBUG
-       { /*�ܥȥ�ϡ��ս�����;�ϥ����å��ѥ�����*/
+       { /*ボトムハーフ処理の余力チェック用コード*/
 	 volatile long int loop;
 	 for(loop=0;loop<1;loop++); 
        }
 
-	if((IRR1 & 0x40)!=0){ /* �����ߥե饰�ξ��֥����å� */
-	 ENABLE_LED_GREEN();  /* �⤷�����ߥե饰��Ω�äƤ����п�LED���� */
+	if((IRR1 & 0x40)!=0){ /* 割り込みフラグの状態チェック */
+	 ENABLE_LED_GREEN();  /* もし割り込みフラグが立ってたら緑色LED点灯 */
        }
 #endif
 }
 
 #pragma interrupt
-void int_timerv(void){         /* ��1[msec] ���Ȥ˸ƤӽФ����褦�ˤ���*/
+void int_timerv(void){         /* 約1[msec] ごとに呼び出されるようにする*/
        static unsigned int column=0;
        unsigned int i,p;
-       /*���ԡ����������*/
+       /*スピーカ周りの値*/
 
-       //������tempo��tempo_compare��const�Ǥʤ����ѿ��ˤ��롣
-       //â�������η׻���ܥȥ�ϡ��դ����¹Ԥ����,�������Ť��Τ�
-       //�ȥåץϡ��դǷ׻���Ԥ���
+       //下記のtempoやtempo_compareをconstでなく，変数にする。
+       //但し，この計算をボトムハーフで毎回実行すると,処理が重いので
+       //トップハーフで計算を行う。
        //       const int tempo=120;
        //       const int tempo_compare = 1000/(tempo * 16 / 60);
        //       const int tempo_compare = 3735 / tempo ;
        static int tempo_count=0;
 
-       TCSRV &= ~0xe0;         /* ������V�γ����ߥե饰���ꥢ*/
+       TCSRV &= ~0xe0;         /* タイマVの割り込みフラグクリア*/
        tmv_flag=TRUE;
-       /*int_timerv�ϡ�����ػߤΤޤ�,����ư��*/
+       /*int_timervは，割込禁止のまま,全力動作*/
 
-       /* 1ms ���Ȥ˥ϡ��ɥꥢ�륿�����ư�����������(matrix_led����)*/
+       /* 1ms ごとにハードリアルタイムで動作させたい処理(matrix_led周り)*/
 
-       column=(column+1) & 0x0007; /* column=(column++)&0x0007�ϡ�NG�Ǥ���  */ 
-       ENABLE_MATRIX_LATCH();      /*��å���ͭ���ˤ�������΢��D-FF�򥻥å� */
+       column=(column+1) & 0x0007; /* column=(column++)&0x0007は，NGです…  */ 
+       ENABLE_MATRIX_LATCH();      /*ラッチを有効にし，舞台裏でD-FFをセット */
 
-       /*16bit (1��ʬ) �򥷥ꥢ��ž��*/
+       /*16bit (1列分) をシリアル転送*/
        for(p=matrix_led_pattern[column],i=0;i<16;i++,p<<=1){        
 	 if((p&0x8000)==0){
 	   DISABLE_MATRIX_SIN();
 	 }else{
 	   ENABLE_MATRIX_SIN();
 	 }
-	 SET_H_MATRIX_SCLK();SET_L_MATRIX_SCLK();   /* pos���å����*/
+	 SET_H_MATRIX_SCLK();SET_L_MATRIX_SCLK();   /* posエッジ一つ*/
        }
 
-       ENABLE_MATRIX_BLANK();   /*�ʲ�����ȴ�������ѹ���ɽ�������ʤ�*/
-       DISABLE_MATRIX_LATCH();  ENABLE_MATRIX_LATCH();  /*�����ȴ��*/
-       SELECT_MATRIX_COLUMN(column);               /*j���ܤ�����ѹ�*/
-       DISABLE_MATRIX_BLANK();                          /*����������*/
+       ENABLE_MATRIX_BLANK();   /*以下の筒抜けと列変更は表示させない*/
+       DISABLE_MATRIX_LATCH();  ENABLE_MATRIX_LATCH();  /*一瞬筒抜け*/
+       SELECT_MATRIX_COLUMN(column);               /*j番目の列に変更*/
+       DISABLE_MATRIX_BLANK();                          /*点灯させる*/
 
 
-       /*���ԡ�����Ϣ����*/
+       /*スピーカ関連処理*/
        if(snd_check()==TRUE){
 	 if(tempo_compare < ++tempo_count){
 	   tempo_count = 0;
@@ -99,48 +99,48 @@ void int_timerv(void){         /* ��1[msec] ���Ȥ˸ƤӽФ����褦�ˤ���*/
 
 
 #ifdef DEBUG
-       { /*�ܥȥ�ϡ��ս�����;�ϥ����å��ѥ�����*/
+       { /*ボトムハーフ処理の余力チェック用コード*/
 	 volatile int loop;
 	 for(loop=0;loop<10;loop++);
-	 /*�Ȥ����ﲼ�Ǥε�ư(â�������θ�˥������ϤΥ����ɤ��ɲ�)*/
-	 /*loop<461 :10ʬ���٤Ǥ�,��þ���ǧ�Ǥ���(â�������ڲ����1�����)*/
+	 /*とある条件下での挙動(但し，その後にキー入力のコードを追加)*/
+	 /*loop<461 :10分程度では,破綻を確認できず(但し，検証回数は1回だけ)*/
        }
 
-       if((TCSRV & 0xe0)!=0){ /* �����ߥե饰�ξ��֥����å� */
-	 ENABLE_LED_RED();    /* �⤷�����ߥե饰��Ω�äƤ����ֿ�LED����*/
+       if((TCSRV & 0xe0)!=0){ /* 割り込みフラグの状態チェック */
+	 ENABLE_LED_RED();    /* もし割り込みフラグが立ってたら赤色LED点灯*/
        }
 #endif
 }
 
-/*�����޴ط���������*/
+/*タイマ関係の値設定*/
 void timer_init(void){
-	/*������A������(1/32[sec]���ȤΥ����޳����ߤ�����) */
-	TMA = 0x9f; /* ������A TCA�ȥץꥹ������W�Υꥻ�å�(2011/12/15�ɲ�) */
-	TMA = 0x9b; /* ������A 1/32[sec]��γ��������                      */
-	/* 0x9b => 1001 1011 ������ (����ϡ����Υꥹ�Ȥ򸫤�)            */
+	/*タイマAの設定(1/32[sec]ごとのタイマ割り込みを生成) */
+	TMA = 0x9f; /* タイマA TCAとプリスケーラWのリセット(2011/12/15追加) */
+	TMA = 0x9b; /* タイマA 1/32[sec]毎の割込の設定                      */
+	/* 0x9b => 1001 1011 の内訳 (解説は，過去のリストを見よ)            */
 
-	IENR1 |= 0x40; 	     /* ������A�γ�����������ͭ���ˤ���*/
+	IENR1 |= 0x40; 	     /* タイマAの割り込み生成を有効にする*/
 
-	/*������V������(�ޥ˥奢��򸫤�,�ʲ���3�Ԥα��դ�񤭴�����)*/
-	TCORA = 124;    /*�����ߴֳ֤���1ms�ˤʤ�褦�ˤ���(125ʬ��)*/
-	TCRV0 = 0x4b;  /*����ڥ��ޥå�A�ǳ����ߡ����κݤ˥����󥿥��ꥢ*/
-	TCRV1 = 0x01;  /*�����å��ϡ������Φ���128ʬ��(16MHz/128)���Ѥ���*/
+	/*タイマVの設定(マニュアルを見て,以下の3行の右辺を書き換えよ)*/
+	TCORA = 124;    /*割り込み間隔が約1msになるようにする(125分周)*/
+	TCRV0 = 0x4b;  /*コンペアマッチAで割り込み。その際にカウンタクリア*/
+	TCRV1 = 0x01;  /*クロックは，内部のΦの128分周(16MHz/128)を用いる*/
 
-	/*timerv��ɬ��0���饹�����Ȥ����� */
-	TCNTV = 0x00;          /* ������V�����������󥿤�0���鳫��*/
-	BIT_CLR(IRR1,6);       /* ������A�γ����ߥե饰���ꥢ   */
-	TCSRV &= ~0xe0;        /* ������V�γ����ߥե饰���ꥢ   */
+	/*timervも必ず0からスタートさせる */
+	TCNTV = 0x00;          /* タイマVの内部カウンタを0から開始*/
+	BIT_CLR(IRR1,6);       /* タイマAの割り込みフラグクリア   */
+	TCSRV &= ~0xe0;        /* タイマVの割り込みフラグクリア   */
 
-	/* ������W������(���ԡ�����)*/
+	/* タイマWの設定(スピーカ用)*/
 	TCRW = 0xbc;
 }
 
-/* main() �ʤɤγ����ߥ롼����ʳ��ν����ϡ��ȥåץϡ��դν���*/
+/* main() などの割り込みルーチン以外の処理は，トップハーフの処理*/
 
-/* User Interface �Υ��ơ��ȥޥ��� (�����������)*/
+/* User Interface のステートマシン (ここを作り込む)*/
 
-/* Ŭ�ڤʥ⡼��̾������뤳�Ȥ�˾�ޤ�������MODE_0���Ȥ��롣 */
-/* �����������򤹤�ʤ�С�Ŭ�ڤʥơ��֥�����ɬ�פ����� */
+/* 適切なモード名を入れることが望ましいが，MODE_0〜とする。 */
+/* 美しい書き方をするならば，適切なテーブルを持つ必要がある */
 enum MENU_MODE{
   MODE_OUT_OF_MIN=-1,
   MODE_0,
@@ -155,17 +155,17 @@ enum MENU_MODE{
 };
 
 enum SW_CODE{
-  KEY_NONE=0,         //��������̵�� 
-  KEY_SHORT_U=(1<<4), //��û����
-  KEY_SHORT_D=(1<<3), //��û����
-  KEY_SHORT_L=(1<<2), //��û����
-  KEY_SHORT_R=(1<<1), //��û����
-  KEY_SHORT_C=(1<<0), //���û����
-  KEY_LONG_U=(0x80 | (1<<4)), //��Ĺ����
-  KEY_LONG_D=(0x80 | (1<<3)), //��Ĺ����
-  KEY_LONG_L=(0x80 | (1<<2)), //��Ĺ����
-  KEY_LONG_R=(0x80 | (1<<1)), //��Ĺ����
-  KEY_LONG_C=(0x80 | (1<<0))  //���Ĺ����
+  KEY_NONE=0,         //キー入力無し 
+  KEY_SHORT_U=(1<<4), //上短押し
+  KEY_SHORT_D=(1<<3), //下短押し
+  KEY_SHORT_L=(1<<2), //左短押し
+  KEY_SHORT_R=(1<<1), //右短押し
+  KEY_SHORT_C=(1<<0), //中央短押し
+  KEY_LONG_U=(0x80 | (1<<4)), //上長押し
+  KEY_LONG_D=(0x80 | (1<<3)), //下長押し
+  KEY_LONG_L=(0x80 | (1<<2)), //左長押し
+  KEY_LONG_R=(0x80 | (1<<1)), //右長押し
+  KEY_LONG_C=(0x80 | (1<<0))  //中央長押し
 };
 
 typedef struct _UI_DATA{
@@ -183,11 +183,11 @@ extern void do_mode5(UI_DATA* ui_data); // add mode
 extern void do_mode6(UI_DATA* ui_data);
 extern void do_mode7(UI_DATA* ui_data);
 
-UI_DATA* ui(char sw){ /* �ߡ��귿���ࡼ�������ɤä��Ǽ������ɤ��ͤ��� */
+UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
   static UI_DATA ui_data={MODE_0,MODE_0,};
   int prev_mode;
 
-  ui_data.sw=(sw & 0x9f); /*ǰ�Τ���ˡ�b6,b5��0�ˤ��Ƥ���*/
+  ui_data.sw=(sw & 0x9f); /*念のために，b6,b5を0にしておく*/
   prev_mode=ui_data.mode;
 
   switch(ui_data.mode){
@@ -230,48 +230,48 @@ void do_mode0(UI_DATA* ud){
   int prev_next_mode_data;
   static char str[2];
 
-  /*�⡼��0��ɬ���¹Ԥ��륳���ɤ򵭽�*/
+  /*モード0で必ず実行するコードを記述*/
   prev_next_mode_data=next_mode_data;
 
-  // �ޥȥ�å���LED�򸵤��᤹
+  // マトリックスLEDを元に戻す
   static unsigned int matrix_led_pattern[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
-  if(ud->prev_mode!=ud->mode){  /* ¾�Υ⡼�ɤ���⡼��0�����ܤ������˼¹� */
-    /*ɬ�פʤ顤���餫�Υ⡼�ɤν��������*/
-    lcd_putstr(0,0,"MODE0->MODE0"); /*�⡼��0�ν��ɽ��*/
+  if(ud->prev_mode!=ud->mode){  /* 他のモードからモード0に遷移した時に実行 */
+    /*必要なら，何らかのモードの初期化処理*/
+    lcd_putstr(0,0,"MODE0->MODE0"); /*モード0の初期表示*/
     next_mode_data=MODE_0;
     prev_next_mode_data=MODE_0;
     matrix_scroll=FALSE;
   }
 
-  switch(ud->sw){  /*�⡼����ǤΥ������������*/
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-  case KEY_SHORT_U: /* ��û���� */
+  case KEY_SHORT_U: /* 上短押し */
     if(next_mode_data  < (MODE_OUT_OF_MAX-1)){
       next_mode_data++;
     }
     break;
 
-  case KEY_SHORT_D: /* ��û���� */
+  case KEY_SHORT_D: /* 下短押し */
     if(next_mode_data  > (MODE_OUT_OF_MIN+1)){
       next_mode_data--;
     }
     break;
 
-  case KEY_SHORT_L: /* ��û���� */
-    FLIP_LED_RED(); //�ֿ�LED�Υե�åפ�¹�
+  case KEY_SHORT_L: /* 左短押し */
+    FLIP_LED_RED(); //赤色LEDのフリップを実行
     break;
 
-  case KEY_SHORT_R: /* ��û���� */
+  case KEY_SHORT_R: /* 右短押し */
     FLIP_LED_GREEN();
     break;
 
-  case KEY_LONG_L: /* ��Ĺ���� */
+  case KEY_LONG_L: /* 左長押し */
     FLIP_LED_BLUE();
     break;
 
-  case KEY_LONG_R: /* ��Ĺ���� */
-    if(matrix_scroll==FALSE){//�ޥȥꥯ��LED�Υ���������ե饰�Υե�å�
+  case KEY_LONG_R: /* 右長押し */
+    if(matrix_scroll==FALSE){//マトリクスLEDのスクロールフラグのフリップ
       matrix_scroll=TRUE;
     }else{
       matrix_scroll=FALSE;
@@ -279,39 +279,39 @@ void do_mode0(UI_DATA* ud){
 
     break;
 
-  case KEY_LONG_C: /* ���������Ĺ���� */
-    ud->mode=next_mode_data;/*���ϡ��⡼���ѹ�*/
+  case KEY_LONG_C: /* 中央キーの長押し */
+    ud->mode=next_mode_data;/*次は，モード変更*/
     break;
 
-  default: /*�嵭�ʳ�*/
+  default: /*上記以外*/
     break;
   }
 
-  /* �⡼�ɤν�λ���˽������륳���� */
+  /* モードの終了時に処理するコード */
   if((prev_next_mode_data!=next_mode_data) || sec_flag==TRUE){ 
-    /* ���δ�˾����⡼�ɤ��ͤ��Ѥ�ä����ν��� */
+    /* 次の希望するモードの値が変わった時の処理 */
     str[0]='0'+next_mode_data;
     str[1]='\0';
     lcd_putstr(11,0,str);
   }
 
-  if(sec_flag==TRUE){ /* 1�ä��Ȥν���*/
+  if(sec_flag==TRUE){ /* 1秒ごとの処理*/
     lcd_clear();
-    lcd_putdec(0,1,5,sec);      /* LCD�β��ι�(1����)�ˡ��в��ÿ���ɽ�� */
+    lcd_putdec(0,1,5,sec);      /* LCDの下の行(1行目)に，経過秒数を表示 */
     lcd_putstr(0,0,"MODE0->MODE");
     lcd_putstr(11,0,str);
 
-    /*�����ȡ������Ǥϡ�LCD�κ����������1�ä��Ȥ˹ԤäƤ��롣        */
-    /*����ϡ������졤ͽ�����̥Υ����ǡ�LCD��ɽ���˸�ư�ȯ�����Ƥ⡤ */
-    /*1�ø�ˤϡ�����������Ȥ������̤���Ԥ��Ƥ��롣�ϡ��ɤ������Ǥϡ� */
-    /*�����鹩�פ��Ƥ⡤�ɤ��褦��̵���Υ��������ä��ꤹ��ΤǤ��ġ�    */
-    /*�Զ���ȯ����Ψ�ϡ��֥����Ȥ򤢤����٤�����Сײ����뤳�Ȥ���ǽ��*/
+    /*コメント：ここでは，LCDの再描画処理を1秒ごとに行っている。        */
+    /*これは，万が一，予期せぬノイズで，LCDの表示に誤動作が発生しても， */
+    /*1秒後には，回復させるという効果を期待している。ハードの世界では， */
+    /*いくら工夫しても，防ぎようが無いノイズがあったりするのです…。    */
+    /*不具合の発生確率は，「コストをある程度かければ」下げることが可能。*/
 
-    /*�Ĥ��Ǥˡ�matrix_led�Υ����������ԤäƤߤ�*/
+    /*ついでに，matrix_ledのスクロールも行ってみる*/
     if(matrix_scroll!=FALSE){ 
-      /*FALSE�ǥ����å����Ƥ���Τϡ�0�ǤΥ����å����������̤˹�®������*/
-      /*�ʤ��������δؿ��ϡ�ñ�ʤ�ǥХå������ȤʤΤǡ��¹Ԥ�³������*/
-      /*�ե���ȥơ��֥��ȴ���Ф��Ƥ��ޤ���ɽ�����Ѥˤʤ�ޤ���*/
+      /*FALSEでチェックしているのは，0でのチェックの方が一般に高速だから*/
+      /*なお，下記の関数は，単なるデバッグアウトなので，実行をし続けたら*/
+      /*フォントテーブルを抜け出してしまい，表示が変になります。*/
       matrix_font_debug_out_sample(matrix_led_pattern);
     }
 
@@ -320,7 +320,7 @@ void do_mode0(UI_DATA* ud){
 
 }
 
-  /*���å��󥿥��ޡ��Υ��르�ꥺ��ΰ���(���� mode1)*/
+  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
 void mode1_time(int set){
   static int m,s,l=0,n=0;
   if(set!=0){
@@ -350,52 +350,52 @@ void mode1_time(int set){
 }
 
 void do_mode1(UI_DATA* ud){
-  if(ud->prev_mode!=ud->mode){  /* ¾�Υ⡼�����ܤ������˼¹� */
-    /*ɬ�פʤ顤���餫�Υ⡼�ɤν��������*/
+  if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
+    /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
-    lcd_putstr(0,0,"MODE1"); /*�⡼��1�ν��ɽ��*/
-    lcd_putstr(0,1,""); /*�⡼��1�ν��ɽ��*/
+    lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
+    lcd_putstr(0,1,""); /*モード1の初期表示*/
   }
-  switch(ud->sw){  /*�⡼����ǤΥ������������*/
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-  case KEY_SHORT_U: /* ��û���� */
+  case KEY_SHORT_U: /* 上短押し */
     mode1_time(1800);
     break;
     
-  case KEY_SHORT_D: /* ��û���� */
+  case KEY_SHORT_D: /* 下短押し */
     mode1_time(600);
     break;
 
-  case KEY_SHORT_L: /* ��û���� */
+  case KEY_SHORT_L: /* 左短押し */
     mode1_time(180);
     break;
-  case KEY_SHORT_R: /* ��û���� */
+  case KEY_SHORT_R: /* 右短押し */
     mode1_time(300);
     break;
   default:
     mode1_time(0);
   }/* /switch */
-   /*�⡼��1�ϡ�����ܥ��󤬲����줿�顤MODE0�����*/
-  switch(ud->sw){    /*�⡼����ǤΥ������������*/
-  case KEY_LONG_C:   /* ���������Ĺ���� */
-    ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+   /*モード1は，真中ボタンが押されたら，MODE0に戻る*/
+  switch(ud->sw){    /*モード内でのキー入力別操作*/
+  case KEY_LONG_C:   /* 中央キーの長押し */
+    ud->mode=MODE_0; /* 次は，モード0に戻る */
     break;
   }
 
 }
 
-/*����ɽ���Υ��르�ꥺ��ΰ���*/
+/*時計表示のアルゴリズムの一部*/
 void show_sec(void){
   char data[9];
   long h,m,s;
-  long sec_hold=sec; /* �ͤ��������Ƥ������ˡ�sec���Ѥ��ȷ��ʤΤǡ�   */
-                    /* �����ǡ�sec���ͤ���ޤ��롣sec���ͤϡ��ܥȥ�ϡ���*/
-                    /* ���Ѳ������Ƥ���Τǡ����������Ƚ�������Ѳ����롣*/
+  long sec_hold=sec; /* 値を生成している最中に，secが変わると嫌なので，   */
+                    /* ここで，secの値を捕まえる。secの値は，ボトムハーフ*/
+                    /* で変化させているので，運が悪いと処理中に変化する。*/
   
   s=sec_hold % 60;
-  m=(sec_hold / 60); /* �����ǡ�h���ͤη������ϡ����ڤ��Ƥ��ʤ�����͡�*/
+  m=(sec_hold / 60); /* ここで，hの値の健全性は，検証していないからね。*/
   h=(sec_hold / 3600);
-  /* �ҥ�Ȥϡ���sec�ϡ�int����*/
+  /* ヒントは，「secは，int型」*/
   data[0]='0'+h/10;
   data[1]='0'+h%10;
   if(sec_hold>3600){
@@ -421,7 +421,7 @@ void show_sec(void){
 }
 
 
-//ƣ�椬do_mode2�ޤǻȤäƤޤ�
+//藤井がdo_mode2まで使ってます
 char astrisk[9];
 char settime[9];
 int tim[9];
@@ -434,10 +434,10 @@ void do_mode2(UI_DATA* ud){
   int i=0;
 long sec_henkou=0;
   if(ud->prev_mode!=ud->mode ){ 
-    /* ¾�Υ⡼�����ܤ������˼¹� �⤷���ϡ�1�ä��Ȥ�ɽ��*/
-    /*ɬ�פʤ顤���餫�Υ⡼�ɤν��������*/
+    /* 他のモード遷移した時に実行 もしくは，1秒ごとに表示*/
+    /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();  //0123456789ABCDEF
-    lcd_putstr(0,0,"MODE2:sec�� �ˎ�������"); /*�⡼��2�ν��ɽ��*/
+    lcd_putstr(0,0,"MODE2:secｦ ﾋｮｳｼﾞ"); /*モード2の初期表示*/
     show_sec();
     sec_flag=FALSE;
 
@@ -568,15 +568,15 @@ long sec_henkou=0;
     }
     else{
        lcd_clear();  //0123456789ABCDEF
-    lcd_putstr(0,0,"MODE2:sec�� �ˎ�������"); /*�⡼��2�ν��ɽ��*/
+    lcd_putstr(0,0,"MODE2:secｦ ﾋｮｳｼﾞ"); /*モード2の初期表示*/
     show_sec();
     sec_flag=FALSE;
     }
   }
-  /*�⡼��2�ϡ�����ܥ��󤬲����줿�顤MODE0�����*/
-  switch(ud->sw){    /*�⡼����ǤΥ������������*/
-  case KEY_LONG_C:   /* ���������Ĺ���� */
-    ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+  /*モード2は，真中ボタンが押されたら，MODE0に戻る*/
+  switch(ud->sw){    /*モード内でのキー入力別操作*/
+  case KEY_LONG_C:   /* 中央キーの長押し */
+    ud->mode=MODE_0; /* 次は，モード0に戻る */
     break;
     
   case KEY_LONG_L:
@@ -592,7 +592,7 @@ long sec_henkou=0;
 
 
 void do_mode3(UI_DATA* ud){
-  static int flag;  /* �������Ϥ�ͭ�� */
+  static int flag;  /* キー入力の有効 */
   static int count;
   static int ready;
   static int i;
@@ -601,13 +601,13 @@ void do_mode3(UI_DATA* ud){
   static char mem[]="**********";
   static char ans[]="**********";
 
-  if(ud->prev_mode!=ud->mode){  /* ¾�Υ⡼�����ܤ������˼¹� */
-    /*ɬ�פʤ顤���餫�Υ⡼�ɤν��������*/
+  if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
+    /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
-    lcd_putstr(0,0,"MODE3"); /*�⡼��3�ν��ɽ��*/
-    lcd_putstr(0,1,"����_�Ŏ��ގ���_��������"); /*�⡼��3�ν��ɽ��*/
+    lcd_putstr(0,0,"MODE3"); /*モード3の初期表示*/
+    lcd_putstr(0,1,"ｼﾀ_ﾅｶﾞｵｼ_ｽﾀｰﾄ"); /*モード3の初期表示*/
     srand(sec);
-    ready=3; /* �����ÿ����ѿ� */
+    ready=3; /* 開始秒数の変数 */
     count=0;
     flag=0;
     score=0;
@@ -638,62 +638,62 @@ void do_mode3(UI_DATA* ud){
       matrix_led_pattern[i]=0x0000;
   }
 
-  /*�⡼��1�ϡ�����ܥ��󤬲����줿�顤MODE0����������ñ��ʽ���*/
-  /*����ˡ�beta2�ΥС������Ǥϡ����ں�����ǽ�ε�ư��ʬ���ɲ�*/
-  /*â����main�ؿ���ǡ������ΥǥХå�ɽ����ԤäƤ���*/
-  if(sec_flag==TRUE){ /* 1�ä��Ȥν���*/
+  /*モード1は，真中ボタンが押されたら，MODE0に戻るだけの単純な処理*/
+  /*それに，beta2のバージョンでは，音楽再生機能の起動部分を追加*/
+  /*但し，main関数内で，キーのデバッグ表示を行っている*/
+  if(sec_flag==TRUE){ /* 1秒ごとの処理*/
     switch(flag){
     case 0:
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
-      case KEY_LONG_C:  /* ���������Ĺ���� */
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
-      case KEY_LONG_D:  /* ������Ĺ�����ǳ��� */
+      case KEY_LONG_D:  /* 下キー長押しで開始 */
 	flag=1;
 	break;
       }
       break;
     case 1:
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
-      case KEY_LONG_C:  /* ���������Ĺ���� */
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
       }
       lcd_clear();
-      lcd_putstr(0,0,"MODE3"); /*�⡼��3�ν��ɽ��*/
-      lcd_putdec(0,1,5,ready); /* LCD�β��ι�(1����)�ˡ��в��ÿ���ɽ�� */
+      lcd_putstr(0,0,"MODE3"); /*モード3の初期表示*/
+      lcd_putdec(0,1,5,ready); /* LCDの下の行(1行目)に，経過秒数を表示 */
       if(ready==0) flag=2;
       ready--;
       sec_flag=FALSE;     
       break;
     case 2:
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
-      case KEY_LONG_C:  /* ���������Ĺ���� */
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
       }
       if(count<10){
-	lcd_putstr(0,0,"�ˎ��؎�_10��_���Ύގ���"); /*�⡼��3�ν��ɽ��*/
+	lcd_putstr(0,0,"ﾋｶﾘｦ_10ｺ_ｵﾎﾞｴﾙ"); /*モード3の初期表示*/
 	for(i=0; i<8; i++)
 	  matrix_led_pattern[i]=0x0000;
 	switch(mem[count]){
-	case 'U':                 /* �� */
+	case 'U':                 /* 上 */
 	  matrix_led_pattern[3]=0x0003;
 	  matrix_led_pattern[4]=0x0003;
 	  break;
-	case 'D':                 /* �� */
+	case 'D':                 /* 下 */
 	  matrix_led_pattern[3]=0x00c0;
 	  matrix_led_pattern[4]=0x00c0;
 	  break;
-	case 'L':                 /* �� */
+	case 'L':                 /* 左 */
 	  matrix_led_pattern[0]=0x0018;
 	  matrix_led_pattern[1]=0x0018;
 	  break;
-	case 'R':                 /* �� */
+	case 'R':                 /* 右 */
 	  matrix_led_pattern[6]=0x0018;
 	  matrix_led_pattern[7]=0x0018;
 	  break;
-	case 'C':                 /* ��� */
+	case 'C':                 /* 中央 */
 	  matrix_led_pattern[3]=0x0018;
 	  matrix_led_pattern[4]=0x0018;
 	  break;
@@ -717,11 +717,11 @@ void do_mode3(UI_DATA* ud){
       matrix_led_pattern[5]=0x4200;
       matrix_led_pattern[6]=0xbc00;
       matrix_led_pattern[7]=0x8000;
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
-      case KEY_LONG_C:  /* ���������Ĺ���� */
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
-      case KEY_SHORT_U: /* ��Υ��� */
+      case KEY_SHORT_U: /* 上のキー */
 	lcd_putstr(count,0,"U");
 	ans[count]='U';
 	if(mem[count]!='U'){
@@ -731,7 +731,7 @@ void do_mode3(UI_DATA* ud){
 	}
 	count++;
 	break;
-      case KEY_SHORT_D: /* ���Υ��� */
+      case KEY_SHORT_D: /* 下のキー */
 	lcd_putstr(count,0,"D");
 	ans[count]='D';
 	if(mem[count]!='D'){
@@ -741,7 +741,7 @@ void do_mode3(UI_DATA* ud){
 	}
 	count++;
 	break;
-      case KEY_SHORT_L: /* ���Υ��� */
+      case KEY_SHORT_L: /* 左のキー */
 	lcd_putstr(count,0,"L");
 	ans[count]='L';
 	if(mem[count]!='L'){
@@ -751,7 +751,7 @@ void do_mode3(UI_DATA* ud){
 	}
 	count++;
 	break;
-      case KEY_SHORT_R: /* ���Υ��� */
+      case KEY_SHORT_R: /* 右のキー */
 	lcd_putstr(count,0,"R");
 	ans[count]='R';
 	if(mem[count]!='R'){
@@ -761,7 +761,7 @@ void do_mode3(UI_DATA* ud){
 	}
 	count++;
 	break;
-      case KEY_SHORT_C:  /* ������� */
+      case KEY_SHORT_C:  /* 中央キー */
 	lcd_putstr(count,0,"C");
 	ans[count]='C';
 	if(mem[count]!='C'){
@@ -784,16 +784,16 @@ void do_mode3(UI_DATA* ud){
       matrix_led_pattern[6]=0x0000;
       matrix_led_pattern[7]=0x0000;
       //
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
-      case KEY_SHORT_D:  /* ������ */
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_SHORT_D:  /* 下キー */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
       }
       //
       lcd_clear();
       lcd_putstr(0,0,ans);
       lcd_putstr(0,1,"Score=");
-      lcd_putdec(6,1,3,score); /* LCD�β��ι�(1����)�ˡ��в��ÿ���ɽ�� */
+      lcd_putdec(6,1,3,score); /* LCDの下の行(1行目)に，経過秒数を表示 */
       if(ready<0){
 	flag=5;
 	ready=3;
@@ -819,9 +819,9 @@ void do_mode3(UI_DATA* ud){
   else{
     sec_flag=FALSE;
     //
-    switch(ud->sw){  /*�⡼����ǤΥ������������*/
-    case KEY_LONG_C:  /* �������Ĺ���� */
-      ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+    switch(ud->sw){  /*モード内でのキー入力別操作*/
+    case KEY_LONG_C:  /* 中央キー長押し */
+      ud->mode=MODE_0; /* 次は，モード0に戻る */
       break;
     }
     //
@@ -829,7 +829,7 @@ void do_mode3(UI_DATA* ud){
 }
 
 
-//mode_4 ���塼�ƥ��󥰡����ܡ�
+//mode_4 シューティング（倉本）
 void do_mode4(UI_DATA* ud){
 
   static int row;
@@ -846,13 +846,13 @@ void do_mode4(UI_DATA* ud){
     }
     all[row]=0x8000;
   }
-  switch(ud->sw){  /*�⡼����ǤΥ������������*/
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-  case KEY_LONG_C:  /* ���������Ĺ���� */
-    ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+  case KEY_LONG_C:  /* 中央キーの長押し */
+    ud->mode=MODE_0; /* 次は，モード0に戻る */
     break;
     
-  case KEY_SHORT_R: /* ��û����  ���������*/
+  case KEY_SHORT_R: /* 右短押し  自機の操作*/
     if(row < 7){
       row++;
       all[row]=all[row] | 0x8000;
@@ -860,7 +860,7 @@ void do_mode4(UI_DATA* ud){
     }
     break;
 
-  case KEY_SHORT_C:/* ���������û����  ���������*/
+  case KEY_SHORT_C:/* 中央キーの短押し  自機の操作*/
     if(row > 0){
       row--;
       all[row]=all[row] | 0x8000;
@@ -874,7 +874,7 @@ void do_mode4(UI_DATA* ud){
   }
 }
 
-// MODE_5�ʶ��߾�����
+// MODE_5（挟み将棋）
 void do_mode5(UI_DATA* ud){
 
   static int row;
@@ -898,13 +898,13 @@ void do_mode5(UI_DATA* ud){
     play[row]=0x8000;
   }
 
-  switch(ud->sw){  /*�⡼����ǤΥ������������*/
+  switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-    case KEY_LONG_C:  /* ���������Ĺ���� */
-      ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+    case KEY_LONG_C:  /* 中央キーの長押し */
+      ud->mode=MODE_0; /* 次は，モード0に戻る */
       break;
     
-    case KEY_SHORT_R: /* ��û����*/
+    case KEY_SHORT_R: /* 右短押し*/
       if(row < 7){
       int red = 0x0000 | (1 << (line));
       int green =  0x0000 | (1 << (line+8));
@@ -914,7 +914,7 @@ void do_mode5(UI_DATA* ud){
       }
       break;
 
-  case KEY_SHORT_L:/* ��������û���� */
+  case KEY_SHORT_L:/* 左キーの短押し */
     if(row > 0){
       int red = 0x0000 | (1 << (line));
       int green =  0x0000 | (1 << (line+8));
@@ -924,7 +924,7 @@ void do_mode5(UI_DATA* ud){
     }
     break;
 
-  case KEY_SHORT_U: /* �奭����û���� */
+  case KEY_SHORT_U: /* 上キーの短押し */
     if(line > 0){
       int red = 0x0000 | (1 << (line-1));
       int green =  0x0000 | (1 << (line-1+8));
@@ -933,7 +933,7 @@ void do_mode5(UI_DATA* ud){
     }
     break;
 
-  case KEY_SHORT_D: /* ��������û���� */
+  case KEY_SHORT_D: /* 下キーの短押し */
     if(line < 7){
       int red = 0x0000 | (1 << (line+1));
       int green =  0x0000 | (1 << (line+1+8));
@@ -942,15 +942,15 @@ void do_mode5(UI_DATA* ud){
     }
     break;
 
-  case KEY_SHORT_C: /* ���������û���� */
+  case KEY_SHORT_C: /* 中央キーの短押し */
     if(playermode == 11){
       //playerrow = row;
       //playerline = line;
       playermode = 12;
     }
     else if(playermode == 12){
-      // ����row,line��������Ф˽񤭴���
-      // ���θ塢plyerrow��playerline�򸵤ˡ������Ф�null���᤹
+      // 次はrow,lineを所得→緑に書き換え
+      // その後、plyerrowとplayerlineを元に、元の緑をnullに戻す
       
       
       
@@ -977,12 +977,12 @@ void do_mode5(UI_DATA* ud){
 }
 
 
-// ƣ�桡�ԥ�ݥ󥲡���
-int ball_x,ball_y=2;//�ܡ����x��ɸ��y��ɸ
-int ita=3;  //������ʬ�κ�¦�κ�ɸ
+// 藤井　ピンポンゲーム
+int ball_x,ball_y=2;//ボールのx座標とy座標
+int ita=3;  //下の部分の左側の座標
 int hajime_flag=FALSE;
-int ue_flag=TRUE; //�ܡ���ξ岼�ΰ�ư����
-int migi_flag=TRUE; //�ܡ���κ����ΰ�ư����
+int ue_flag=TRUE; //ボールの上下の移動方向
+int migi_flag=TRUE; //ボールの左右の移動方向
 int reset_flag=FALSE;
 int restart_flag=FALSE;
 int s6,count3=0,hanekai=0;
@@ -994,7 +994,7 @@ void do_mode6(UI_DATA* ud){
   int i=0;
   if(ud->prev_mode!=ud->mode ){ 
     lcd_clear();
-    lcd_putstr(0,0,"MODE6:�ˎߎݎΎߎݎ��ގ���"); /*�⡼��2�ν��ɽ��*/
+    lcd_putstr(0,0,"MODE6:ﾋﾟﾝﾎﾟﾝｹﾞｰﾑ"); /*モード2の初期表示*/
     lcd_putstr(0,1,"center push");
     s6=sec%8;
     ball_x=s6;
@@ -1023,14 +1023,14 @@ void do_mode6(UI_DATA* ud){
       case KEY_SHORT_L:
 	  level_flag=FALSE;
 	   lcd_clear();
-	   lcd_putstr(0,0,"MODE6:�ˎߎݎΎߎݎ��ގ���"); /*�⡼��2�ν��ɽ��*/
+	   lcd_putstr(0,0,"MODE6:ﾋﾟﾝﾎﾟﾝｹﾞｰﾑ"); /*モード2の初期表示*/
 	   lcd_putstr(0,1,"center push");
 	  break;
       }
     }
     if(hajime_flag == TRUE){
       if(level_flag==FALSE){
-      switch(ud->sw){  /*�⡼����ǤΥ������������*/
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
       case KEY_SHORT_L:
 	if(ita > 0){
 	  matrix_led_pattern[ita] =matrix_led_pattern[ita]^ 0x8080;
@@ -1105,10 +1105,10 @@ void do_mode6(UI_DATA* ud){
       if((ud->sw)==KEY_SHORT_U){
 	restart_flag=TRUE;
 	reset_flag=FALSE;
-	ball_y=2;//�ܡ����x��ɸ��y��ɸ
-	ita=3;  //������ʬ�κ�¦�κ�ɸ
-	ue_flag=TRUE; //�ܡ���ξ岼�ΰ�ư����
-	migi_flag=TRUE; //�ܡ���κ����ΰ�ư����
+	ball_y=2;//ボールのx座標とy座標
+	ita=3;  //下の部分の左側の座標
+	ue_flag=TRUE; //ボールの上下の移動方向
+	migi_flag=TRUE; //ボールの左右の移動方向
 	count3=0;
 	hanekai=0;
 	 s6=sec%8;
@@ -1124,7 +1124,7 @@ void do_mode6(UI_DATA* ud){
     }
     if(restart_flag==TRUE){
        lcd_clear();
-       lcd_putstr(0,0,"MODE6:�ˎߎݎΎߎݎ��ގ���"); /*�⡼��2�ν��ɽ��*/
+       lcd_putstr(0,0,"MODE6:ﾋﾟﾝﾎﾟﾝｹﾞｰﾑ"); /*モード2の初期表示*/
        lcd_putstr(0,1,"center push");
        if((ud->sw)==KEY_SHORT_C){
 	 restart_flag=FALSE;
@@ -1132,11 +1132,11 @@ void do_mode6(UI_DATA* ud){
     }
   }
       switch(ud->sw){
-      case KEY_LONG_C:   /* ���������Ĺ���� */
-	ball_y=2;//�ܡ����x��ɸ��y��ɸ
-	ita=3;  //������ʬ�κ�¦�κ�ɸ
-	ue_flag=TRUE; //�ܡ���ξ岼�ΰ�ư����
-	migi_flag=TRUE; //�ܡ���κ����ΰ�ư����
+      case KEY_LONG_C:   /* 中央キーの長押し */
+	ball_y=2;//ボールのx座標とy座標
+	ita=3;  //下の部分の左側の座標
+	ue_flag=TRUE; //ボールの上下の移動方向
+	migi_flag=TRUE; //ボールの左右の移動方向
 	count3=0;
 	hanekai=0;
 	for(i=0;i<8;i++)
@@ -1146,7 +1146,7 @@ void do_mode6(UI_DATA* ud){
 	hajime_flag=FALSE;
 
 	
-	ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
 	
       case KEY_SHORT_C:
@@ -1167,7 +1167,7 @@ void do_mode6(UI_DATA* ud){
 }
 
 
-// char da[]="������";
+// char da[]="ｲｰﾄ";
 
 char da[5];
 char dat[6];
@@ -1182,7 +1182,7 @@ int number;
 //
 char astr[4];
 
-void do_mode7(UI_DATA* ud){   //����kazuatege-mu
+void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     int s=sec;
     da[1]='e';
     da[2]='a';
@@ -1209,7 +1209,7 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
     astr[1]=' ';
     astr[2]='*';
     astr[3]='\0';
-    lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+    lcd_putstr(13,0,astr); /*モード2の初期表示*/
 
     //
     x='0';
@@ -1224,7 +1224,7 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
     as=1;
     //
     
-    /* 3�������ͤ����� */
+    /* 3桁の乱数値を生成 */
     srand(s);
     x = (char)(rand()%9)+1;
     do {
@@ -1252,9 +1252,9 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
 
       switch(i){
       case 1:
-	switch(ud->sw){  /*�⡼����ǤΥ������������*/
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-	case KEY_SHORT_U: /* ��û���� */
+	case KEY_SHORT_U: /* 上短押し */
 	  /*if(a==9)
 	    a=0;
 	    else*/
@@ -1262,7 +1262,7 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
   
 	  break;
     
-	case KEY_SHORT_D: /* ��û���� */
+	case KEY_SHORT_D: /* 下短押し */
 
 	  	  if(a==0)
 	    a=9;
@@ -1271,25 +1271,25 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
 
 	  break;
 
-	case KEY_SHORT_L: /* ��û���� */
+	case KEY_SHORT_L: /* 左短押し */
 	  break;
-	case KEY_SHORT_R: /* ��û���� */
+	case KEY_SHORT_R: /* 右短押し */
 	  i=2;
 	  astr[0]=' ';
 	  astr[1]='*';
-	  lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
-	case KEY_LONG_C:   /* ���������Ĺ���� */
-	  ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
 	case KEY_SHORT_C:
-	  /* �֥����ȡפο� */
+	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
 	  if (b == y) n++;
 	  if (c == z) n++;
 	  da[0]='0'+n;
-	  /* �֥Х��ȡפο� */
+	  /* 「バイト」の数 */
 	  m = 0;
 	  if (a == y || a == z) m++;
 	  if (b == x || b == z) m++;
@@ -1308,16 +1308,16 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
 	break;
 
       case 2:
-	switch(ud->sw){  /*�⡼����ǤΥ������������*/
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-	case KEY_SHORT_U: /* ��û���� */
+	case KEY_SHORT_U: /* 上短押し */
 	  /*	  if(b==9)
 	    b=0;
 	  else*/
 	    b++;
 	  break;
     
-	case KEY_SHORT_D: /* ��û���� */
+	case KEY_SHORT_D: /* 下短押し */
 	 
 	  if(b==0)
 	    b=9;
@@ -1325,29 +1325,29 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
 	    b--;
 	  break;
 
-	case KEY_SHORT_L: /* ��û���� */
+	case KEY_SHORT_L: /* 左短押し */
 	  i=1;
 	  astr[1]=' ';
 	  astr[0]='*';
-	  lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
-	case KEY_SHORT_R: /* ��û���� */
+	case KEY_SHORT_R: /* 右短押し */
 	  i=3;
 	  astr[1]=' ';
 	  astr[2]='*';
-	  lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
-	case KEY_LONG_C:   /* ���������Ĺ���� */
-	  ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
 	  	case KEY_SHORT_C:
-	  /* �֥����ȡפο� */
+	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
 	  if (b == y) n++;
 	  if (c == z) n++;
 	  da[0]='0'+n;
-	  /* �֥Х��ȡפο� */
+	  /* 「バイト」の数 */
 	  m = 0;
 	  if (a == y || a == z) m++;
 	  if (b == x || b == z) m++;
@@ -1366,44 +1366,44 @@ void do_mode7(UI_DATA* ud){   //����kazuatege-mu
 	break;
 
       case 3:
-	switch(ud->sw){  /*�⡼����ǤΥ������������*/
+	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
-	case KEY_SHORT_U: /* ��û���� */
+	case KEY_SHORT_U: /* 上短押し */
 	  /* if(c==9)
 	    c=0;
 	    else*/
 	    c++;
 	  break;
     
-	case KEY_SHORT_D: /* ��û���� */
+	case KEY_SHORT_D: /* 下短押し */
 	  if(c==0)
 	    c=9;
 	  else
 	    c--;
 	  break;
 
-	case KEY_SHORT_L: /* ��û���� */
+	case KEY_SHORT_L: /* 左短押し */
 	  i=2;
 	  astr[2]=' ';
 	  astr[1]='*';
-	  lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
-	case KEY_SHORT_R: /* ��û���� */
+	case KEY_SHORT_R: /* 右短押し */
 	  //	  astr[2]=' ';
 	  //	  astr[0]='*';
-	  //lcd_putstr(13,0,astr); /*�⡼��2�ν��ɽ��*/
+	  //lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
-	case KEY_LONG_C:   /* ���������Ĺ���� */
-	  ud->mode=MODE_0; /* ���ϡ��⡼��0����� */
+	case KEY_LONG_C:   /* 中央キーの長押し */
+	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
 	case KEY_SHORT_C:
-	  /* �֥����ȡפο� */
+	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
 	  if (b == y) n++;
 	  if (c == z) n++;
 	  da[0]='0'+n;
-	  /* �֥Х��ȡפο� */
+	  /* 「バイト」の数 */
 	  m = 0;
 	  if (a == y || a == z) m++;
 	  if (b == x || b == z) m++;
@@ -1440,61 +1440,61 @@ int main(void){
 
 	//	char test[]="hoge";
 
-	DI();           /* ǰ�Τ����®�䤫��DI() */ 
-	io_init();      /* I/O�ݡ��Ȥν�����롼����(matrix,lcd�����ޤ�) */
-	lcd_init();     /* LCD�ν�����롼�����¹� */
+	DI();           /* 念のために速やかにDI() */ 
+	io_init();      /* I/Oポートの初期化ルーチン(matrix,lcd周りも含む) */
+	lcd_init();     /* LCDの初期化ルーチンを実行 */
 
-	/*LCD�ν�����֤ϡ���������OFF��,�֥�󥯤�OFF�Ȳ��ˤ��Ƥ���*/
+	/*LCDの初期状態は，カーソルOFFで,ブリンクもOFFと仮にしておく*/
 	lcd_cursor(OFF);
 	lcd_blink(OFF); 
 
-	/*���ԡ����ѤΥƥ�ݷ׻�(�Ȥꤢ�����ν���ͤ�����)*/
+	/*スピーカ用のテンポ計算(とりあえずの初期値を設定)*/
 	{
 	  int tempo=120;
-	  tempo_compare = 3735 / tempo; /* 1000/(tempo * 16 / 60) ��Ÿ�� */
+	  tempo_compare = 3735 / tempo; /* 1000/(tempo * 16 / 60) を展開 */
 	}
 
-	timer_init();   /* �����ޤν�������¹�(EI��ľ���˼¹�) */
-        EI();	        /* �����ߤ����  */
+	timer_init();   /* タイマの初期設定を実行(EIの直前に実行) */
+        EI();	        /* 割り込みを許可  */
 
-	//Ⱦ�ѥ������ʰ���:���ϤǤ��ʤ��ʤ顤�������饳�ԥڤ��衣
-	//���������� ���������� ���������� �����Î� �ŎƎǎȎ� �ʎˎ͎̎� �ώЎюҎ� �׎؎َڎ� �ԎՎ� �܎��� �ގ� �� ����������
+	//半角カタカナ一覧:入力できないなら，ここからコピペせよ。
+	//ｱｲｳｴｵ ｶｷｸｹｺ ｻｼｽｾｿ ﾀﾁﾂﾃﾄ ﾅﾆﾇﾈﾉ ﾊﾋﾌﾍﾎ ﾏﾐﾑﾒﾓ ﾗﾘﾙﾚﾛ ﾔﾕﾖ ﾜｦﾝ ﾞﾟ ｯ ｧｨｩｪｫ
 	
-	//�ǽ�ϡ��⡼��0����¹Ԥ����ꡣ
+	//最初は，モード0から実行を想定。
 	lcd_putstr(0,0,"MODE0->MODE0");
 
-	for(;;){	  /* �Ȥ߹��ߥ����ƥ�ϡ�����Ū�ˤ�̵�¥롼�פǼ¹� */
+	for(;;){	  /* 組み込みシステムは，基本的には無限ループで実行 */
 
 
-	  /* �ʲ���ifʸ����ϡ�¿ʬ��1/32�ä��Ȥ˽�����Ԥ�*/
+	  /* 以下のif文の中は，多分，1/32秒ごとに処理を行う*/
 	  if(tma_flag == TRUE){ 
-	    sw = sw_mng();       /* �����å������ϥ����å� libs/key.c */
-	    ui_data=ui(sw);           /* �桼�����󥿥ե������μ¹� */
+	    sw = sw_mng();       /* スイッチの入力チェック libs/key.c */
+	    ui_data=ui(sw);           /* ユーザインタフェースの実行 */
 
 	    if(ui_data->mode==MODE_1){
-	      /* MODE1���ä��顤�������ϤΥǥХå������ȤΥǥХå����� */
+	      /* MODE1だったら，キー入力のデバッグアウトのデバッグ出力 */
 	      key_debug_out_sample(); 
 	    }
 
 	    tma_flag=FALSE;
 	  }
 
-	  /* �ʲ��ν����ϡ�1ms���Ȥ˹Ԥ� */
+	  /* 以下の処理は，1msごとに行う */
 	  if(tmv_flag==TRUE){
 
 #if 0
-	    /*���ԡ����Υ����쥯�ȥ���ȥ�����ϡ�beta2����*/
-	    /*�Ǥ��ʤ��褦�ˤʤ�ޤ�����*/
-	    /*���ԡ����ѤΥݡ��Ȥϡ�������W�Ȥ��������ޤ���*/
-	    /*�����޽��Ϥ�ľ�ܽ��Ϥ��뤳�Ȥˤʤ�ޤ�*/
-	    /*���ԡ����Ѥδؿ� snd_mng(),snd_play(),snd_stop()�ʤɤ�*/
-	    /*���Ѥ��뤳��*/
+	    /*スピーカのダイレクトコントロールは，beta2から*/
+	    /*できないようになりました。*/
+	    /*スピーカ用のポートは，タイマWというタイマから*/
+	    /*タイマ出力を直接出力することになります*/
+	    /*スピーカ用の関数 snd_mng(),snd_play(),snd_stop()などを*/
+	    /*活用すること*/
 
-	    /*�Ȥꤢ�������⡼��1�λ��ˡ���Υ�����û�������줿�顤   */
-	    /*(���Τˤϡ�û������Υ���줿����)��500Hz�β���û���Ф�   */
-	    /*�褦�ʥ��ԡ����Υ���ץ륳���ɡ�                        */
-	    /*���ޡ��Ȥ˥��ԡ������Ĥ餹�Τ��ä��顤�ɤ����ǡ� �ե饰 */
-	    /*��Ω�ä��顤 FLIP_SPEAKER_DIRECT_CONTROL();��¹Ԥ���   */
+	    /*とりあえず，モード1の時に，上のキーが短押しされたら，   */
+	    /*(正確には，短押しの離された時に)，500Hzの音を短く出す   */
+	    /*ようなスピーカのサンプルコード。                        */
+	    /*スマートにスピーカを鳴らすのだったら，どこかで， フラグ */
+	    /*が立ったら， FLIP_SPEAKER_DIRECT_CONTROL();を実行する   */
 	    if(ui_data!=NULL && ui_data->mode==MODE_1 && sw==KEY_SHORT_U){
 		FLIP_SPEAKER_DIRECT_CONTROL();
 	    }
@@ -1508,8 +1508,8 @@ int main(void){
 	  }
 
 
-	  SLEEP(); /*���������ޤǡ����꡼�פ�����(���������㸺!)*/
+	  SLEEP(); /*割込が入るまで，スリープさせる(消費電力低減!)*/
 	}
-	return 0;  /*���ιԤϼ¹Ԥ���ʤ������ٹ��Ф��ʤ����ޤ��ʤ�*/
+	return 0;  /*この行は実行されないが、警告を出さないおまじない*/
 }
 
