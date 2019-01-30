@@ -605,7 +605,7 @@ void do_mode3(UI_DATA* ud){
     /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
     lcd_putstr(0,0,"MODE3"); /*モード3の初期表示*/
-    lcd_putstr(0,1,"ｼﾀ_ﾅｶﾞｵｼ_ｽﾀｰﾄ"); /*モード3の初期表示*/
+    lcd_putstr(0,1,"ｼﾀｦ_ｵｼﾃ_ｽﾀｰﾄ"); /*モード3の初期表示*/
     srand(sec);
     ready=3; /* 開始秒数の変数 */
     count=0;
@@ -613,7 +613,6 @@ void do_mode3(UI_DATA* ud){
     score=0;
     for(i=0; i<10; i++){
       num[i]=rand()%5;
-      //      if(num[i]!=num[i-1] && i!=0) num[i]%=(num[i]+1);
       switch(num[i]){
       case 0:
 	mem[i]='U';
@@ -648,7 +647,7 @@ void do_mode3(UI_DATA* ud){
       case KEY_LONG_C:  /* 中央キーの長押し */
 	ud->mode=MODE_0; /* 次は，モード0に戻る */
 	break;
-      case KEY_LONG_D:  /* 下キー長押しで開始 */
+      case KEY_SHORT_D:  /* 下キーで開始 */
 	flag=1;
 	break;
       }
@@ -874,22 +873,29 @@ void do_mode4(UI_DATA* ud){
   }
 }
 
+
+
+
 // MODE_5（挟み将棋）
 void do_mode5(UI_DATA* ud){
 
   static int row;
   static int line;
   static int play[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
-  static int koma[8]={0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001,0x8001};
+  static int koma_red[8]={0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001};
+  static int koma_green[8]={0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
+  static int shift_table_red[8] = {0xfffe,0xfffd,0xfffb,0xfff7,0xffef,0xffdf,0xffbf,0xff7f};
+  static int shift_table_green[8] =  {0xfeff,0xfdff,0xfbff,0xf7ff,0xefff,0xdfff,0xbfff,0x7fff};
   static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
-  int playermode = 11; 
-  // int playerrow = 0;
-  // int playerline = 0;
+  static int player_mode = 11; 
+  static int player_row = 0;
+  static int player_line = 0;
   int i;
 
   if(ud->prev_mode!=ud->mode){
     lcd_clear();
     lcd_putstr(0,0,"MODE5:syougi");
+    lcd_putstr(0,1,"green");
     row=0;
     line=7;
     for(i=0;i<=7;i++){
@@ -943,22 +949,132 @@ void do_mode5(UI_DATA* ud){
     break;
 
   case KEY_SHORT_C: /* 中央キーの短押し */
-    if(playermode == 11){
-      //playerrow = row;
-      //playerline = line;
-      playermode = 12;
+    if(player_mode == 11){
+      player_row = row;
+      player_line = line;
+      player_mode = 12;
     }
-    else if(playermode == 12){
-      // 次はrow,lineを所得→緑に書き換え
-      // その後、plyerrowとplayerlineを元に、元の緑をnullに戻す
-      
-      
-      
-    }
-    else if(playermode == 21){
+    else if(player_mode == 12){
+      int new_koma =  0x0000 | (1 << (line+8));
+      koma_green[row] = koma_green[row] | new_koma;
 
+      int shift = shift_table_green[player_line];
+      koma_green[player_row] = koma_green[player_row] & shift;
+
+      //判定（隣り合う2つ）
+      if(row != 0 && row != 7){
+	int right = (koma_red[row+1] >> line ) & 0x0001; 
+	int left = (koma_red[row-1] >> line ) & 0x0001;
+
+	if(right == 0x0001 && left == 0x0001){
+
+	   int shift = shift_table_green[line];
+	   koma_green[row] = koma_green[row] & shift;
+
+	}
+	
+      }
+      
+      // 2つ左が緑
+      if(row != 0 && row != 1){
+	if( ( (koma_green[row-2] >> line ) & 0x0100 ) == 0x0100 ){
+
+	  if( ( (koma_red[row-1] >> line ) & 0x0001 ) == 0x0001){
+
+	    int shift = shift_table_red[line];
+	    koma_red[row-1] = koma_red[row-1] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+      // 2つ右が緑
+      if(row != 6 && row != 7){
+	if( ( (koma_green[row+2] >> line ) & 0x0100 ) == 0x0100 ){
+
+	  if( ( (koma_red[row+1] >> line ) & 0x0001 ) == 0x0001){
+
+	    int shift = shift_table_red[line];
+	    koma_red[row+1] = koma_red[row+1] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+      
+      player_mode = 21;
+
+      lcd_clear();
+      lcd_putstr(0,0,"MODE5:syougi");
+      lcd_putstr(0,1,"red");
+      
+      
     }
-    else if(playermode == 22){
+    else if(player_mode == 21){
+      player_row = row;
+      player_line = line;
+      player_mode = 22;
+    }
+    else if(player_mode == 22){
+      int new_koma =  0x0000 | (1 << (line));
+      koma_red[row] = koma_red[row] | new_koma;
+
+      int shift = shift_table_red[player_line];
+      koma_red[player_row] = koma_red[player_row] & shift;
+
+      //判定（隣り合う2つ）
+      if(row != 0 && row != 7){
+	int right = (koma_green[row+1] >> line ) & 0x0100; 
+	int left = (koma_red[row-1] >> line ) & 0x0100;
+
+	if(right == 0x0100 && left == 0x0100){
+
+	   int shift = shift_table_red[line];
+	   koma_red[row] = koma_red[row] & shift;
+
+	}
+	
+      }
+      
+      // 2つ左が赤
+      if(row != 0 && row != 1){
+	if( ( (koma_red[row-2] >> line ) & 0x0001 ) == 0x0001 ){
+
+	  if( ( (koma_green[row-1] >> line ) & 0x0100 ) == 0x0100){
+
+	    int shift = shift_table_green[line];
+	    koma_green[row-1] = koma_green[row-1] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+      // 2つ右が赤
+      if(row != 6 && row != 7){
+	if( ( (koma_red[row+2] >> line ) & 0x0001 ) == 0x0001 ){
+
+	  if( ( (koma_green[row+1] >> line ) & 0x0100 ) == 0x0100){
+
+	    int shift = shift_table_green[line];
+	    koma_green[row+1] = koma_green[row+1] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+ 
+      player_mode = 11;
+
+      lcd_clear();
+      lcd_putstr(0,0,"MODE5:syougi");
+      lcd_putstr(0,1,"green");
       
     }
     break;
@@ -966,7 +1082,7 @@ void do_mode5(UI_DATA* ud){
   }
 
   for(i=0; i<=7; i++){
-    all[i] = play[i] | koma[i];
+    all[i] = play[i] | koma_red[i] | koma_green[i];
   }
   
 
@@ -975,6 +1091,7 @@ void do_mode5(UI_DATA* ud){
   }
 
 }
+
 
 
 // 藤井　ピンポンゲーム
