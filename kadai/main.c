@@ -177,6 +177,7 @@ typedef struct _UI_DATA{
 extern void do_mode0(UI_DATA* ui_data);
 extern void do_mode1(UI_DATA* ui_data);
 extern void do_mode2(UI_DATA* ui_data);
+extern void do_mode3(UI_DATA* ui_data);
 extern void do_mode4(UI_DATA* ui_data);
 extern void do_mode5(UI_DATA* ui_data); // add mode
 extern void do_mode7(UI_DATA* ui_data);
@@ -197,6 +198,9 @@ UI_DATA* ui(char sw){ /* ミーリ型？ムーア型？どっちで実装？良く考えて */
     break;
   case MODE_2:
     do_mode2(&ui_data);
+    break;
+  case MODE_3:
+    do_mode3(&ui_data);
     break;
   case MODE_4:
     do_mode4(&ui_data);
@@ -579,6 +583,244 @@ long sec_henkou=0;
     sec=sec_henkou;
     tsetflag=FALSE;
     break;
+  }
+}
+
+
+void do_mode3(UI_DATA* ud){
+  static int flag;  /* キー入力の有効 */
+  static int count;
+  static int ready;
+  static int i;
+  static int score;
+  static int num[10];
+  static char mem[]="**********";
+  static char ans[]="**********";
+
+  if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
+    /*必要なら，何らかのモードの初期化処理*/
+    lcd_clear();
+    lcd_putstr(0,0,"MODE3"); /*モード3の初期表示*/
+    lcd_putstr(0,1,"ｼﾀ_ﾅｶﾞｵｼ_ｽﾀｰﾄ"); /*モード3の初期表示*/
+    srand(sec);
+    ready=3; /* 開始秒数の変数 */
+    count=0;
+    flag=0;
+    score=0;
+    for(i=0; i<10; i++){
+      num[i]=rand()%5;
+      //      if(num[i]!=num[i-1] && i!=0) num[i]%=(num[i]+1);
+      switch(num[i]){
+      case 0:
+	mem[i]='U';
+	break;
+      case 1:
+	mem[i]='D';
+	break;
+      case 2:
+	mem[i]='L';
+	break;
+      case 3:
+	mem[i]='R';
+	break;
+      case 4:
+	mem[i]='C';
+	break;
+      }
+      ans[i]='*';  
+    }
+    ans[i]='\0';     
+    for(i=0; i<8; i++)
+      matrix_led_pattern[i]=0x0000;
+  }
+
+  /*モード1は，真中ボタンが押されたら，MODE0に戻るだけの単純な処理*/
+  /*それに，beta2のバージョンでは，音楽再生機能の起動部分を追加*/
+  /*但し，main関数内で，キーのデバッグ表示を行っている*/
+  if(sec_flag==TRUE){ /* 1秒ごとの処理*/
+    switch(flag){
+    case 0:
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
+	break;
+      case KEY_LONG_D:  /* 下キー長押しで開始 */
+	flag=1;
+	break;
+      }
+      break;
+    case 1:
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
+	break;
+      }
+      lcd_clear();
+      lcd_putstr(0,0,"MODE3"); /*モード3の初期表示*/
+      lcd_putdec(0,1,5,ready); /* LCDの下の行(1行目)に，経過秒数を表示 */
+      if(ready==0) flag=2;
+      ready--;
+      sec_flag=FALSE;     
+      break;
+    case 2:
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
+	break;
+      }
+      if(count<10){
+	lcd_putstr(0,0,"ﾋｶﾘｦ_10ｺ_ｵﾎﾞｴﾙ"); /*モード3の初期表示*/
+	for(i=0; i<8; i++)
+	  matrix_led_pattern[i]=0x0000;
+	switch(mem[count]){
+	case 'U':                 /* 上 */
+	  matrix_led_pattern[3]=0x0003;
+	  matrix_led_pattern[4]=0x0003;
+	  break;
+	case 'D':                 /* 下 */
+	  matrix_led_pattern[3]=0x00c0;
+	  matrix_led_pattern[4]=0x00c0;
+	  break;
+	case 'L':                 /* 左 */
+	  matrix_led_pattern[0]=0x0018;
+	  matrix_led_pattern[1]=0x0018;
+	  break;
+	case 'R':                 /* 右 */
+	  matrix_led_pattern[6]=0x0018;
+	  matrix_led_pattern[7]=0x0018;
+	  break;
+	case 'C':                 /* 中央 */
+	  matrix_led_pattern[3]=0x0018;
+	  matrix_led_pattern[4]=0x0018;
+	  break;
+	}
+	lcd_putstr(count,1,"*");
+	count++;
+	sec_flag=FALSE;     
+      }
+      if(count == 10){
+	flag=3;
+	count=0;
+      }
+      break;
+    case 3:
+      if(count==0) lcd_clear();
+      matrix_led_pattern[0]=0x0000;
+      matrix_led_pattern[1]=0x3c00;
+      matrix_led_pattern[2]=0x4200;
+      matrix_led_pattern[3]=0x5200;
+      matrix_led_pattern[4]=0x6200;
+      matrix_led_pattern[5]=0x4200;
+      matrix_led_pattern[6]=0xbc00;
+      matrix_led_pattern[7]=0x8000;
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_LONG_C:  /* 中央キーの長押し */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
+	break;
+      case KEY_SHORT_U: /* 上のキー */
+	lcd_putstr(count,0,"U");
+	ans[count]='U';
+	if(mem[count]!='U'){
+	  flag=4;
+	  ready=3;
+	  score=count;
+	}
+	count++;
+	break;
+      case KEY_SHORT_D: /* 下のキー */
+	lcd_putstr(count,0,"D");
+	ans[count]='D';
+	if(mem[count]!='D'){
+	  flag=4;
+	  ready=3;
+	  score=count;
+	}
+	count++;
+	break;
+      case KEY_SHORT_L: /* 左のキー */
+	lcd_putstr(count,0,"L");
+	ans[count]='L';
+	if(mem[count]!='L'){
+	  flag=4;
+	  ready=3;
+	  score=count;
+	}
+	count++;
+	break;
+      case KEY_SHORT_R: /* 右のキー */
+	lcd_putstr(count,0,"R");
+	ans[count]='R';
+	if(mem[count]!='R'){
+	  flag=4;
+	  ready=3;
+	  score=count;
+	}
+	count++;
+	break;
+      case KEY_SHORT_C:  /* 中央キー */
+	lcd_putstr(count,0,"C");
+	ans[count]='C';
+	if(mem[count]!='C'){
+	  flag=4;
+	  ready=3;
+	  score=count;
+	}
+	count++;
+	break;
+      }
+      break;
+    case 4:
+      if(count==0) lcd_clear(); /**?**/
+      matrix_led_pattern[0]=0x0000;
+      matrix_led_pattern[1]=0x0000;
+      matrix_led_pattern[2]=0x007c;
+      matrix_led_pattern[3]=0x0012;
+      matrix_led_pattern[4]=0x0012;
+      matrix_led_pattern[5]=0x007c;
+      matrix_led_pattern[6]=0x0000;
+      matrix_led_pattern[7]=0x0000;
+      //
+      switch(ud->sw){  /*モード内でのキー入力別操作*/
+      case KEY_SHORT_D:  /* 下キー */
+	ud->mode=MODE_0; /* 次は，モード0に戻る */
+	break;
+      }
+      //
+      lcd_clear();
+      lcd_putstr(0,0,ans);
+      lcd_putstr(0,1,"Score=");
+      lcd_putdec(6,1,3,score); /* LCDの下の行(1行目)に，経過秒数を表示 */
+      if(ready<0){
+	flag=5;
+	ready=3;
+      }
+      ready--;
+      sec_flag=FALSE;     
+      break;
+      
+    case 5:
+      if(count==0) lcd_clear(); /**?**/
+      lcd_clear();
+      lcd_putstr(0,0,ans);
+      lcd_putstr(0,1,mem);
+      if(ready<0){
+	flag=4;
+	ready=3;
+      }
+      ready--;
+      sec_flag=FALSE;     
+      break;
+    }
+  }
+  else{
+    sec_flag=FALSE;
+    //
+    switch(ud->sw){  /*モード内でのキー入力別操作*/
+    case KEY_LONG_C:  /* 中央キー長押し */
+      ud->mode=MODE_0; /* 次は，モード0に戻る */
+      break;
+    }
+    //
   }
 }
 
