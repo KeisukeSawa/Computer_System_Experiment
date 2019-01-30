@@ -28,7 +28,7 @@ void int_timera(void){
 	tma_flag = TRUE;
 	//	EI();         /* 必要に応じて EI()を実行  */
 	/*32回呼び出されたら，if文の中が実行されて，sec_flagが有効になる*/
-	if(++count >= 1){
+	if(++count >= 32){
 	      count=0;
 	      sec_flag = TRUE;
 	      sec++;               /* secは，1秒ごとにインクリメントされる*/
@@ -984,6 +984,7 @@ int a=1, b=2, c=3;
 int n=0, m=0;
 int i=3;
 int as=1;
+int number;
 //
 char astr[4];
 
@@ -1017,6 +1018,9 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     lcd_putstr(13,0,astr); /*モード2の初期表示*/
 
     //
+    x='0';
+    y='0';
+    z='0';
     a=1;
     b=2;
     c=3;
@@ -1028,12 +1032,12 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     
     /* 3桁の乱数値を生成 */
     srand(s);
-    x = (char)(rand()%10);
+    x = (char)(rand()%9)+1;
     do {
-      y = (char)(rand()%10);
+      y = (char)(rand()%9)+1;
     } while(y == x);
     do {
-      z = (char)(rand()%10);
+      z = (char)(rand()%9)+1;
       } while(z == x||z == y);
     
   }
@@ -1049,6 +1053,9 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     lcd_putdec(13,1,1,a);
     lcd_putdec(14,1,1,b);
     lcd_putdec(15,1,1,c);
+    // number=((int)x)*100 + ((int)y)*10 + ((int)z);
+    // lcd_putdec(1,0,3,number);
+
       switch(i){
       case 1:
 	switch(ud->sw){  /*モード内でのキー入力別操作*/
