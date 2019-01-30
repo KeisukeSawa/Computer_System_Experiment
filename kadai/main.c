@@ -972,17 +972,23 @@ void do_mode5(UI_DATA* ud){
 
 }
 
+
 // char da[]="ｲｰﾄ";
 
 char da[5];
-
 char dat[6];
-char ans[4];
+char ans[10];
+//
+char x='0', y='0', z='0';
+int a=1, b=2, c=3;
+int n=0, m=0;
+int i=3;
+int as=1;
+//
+char astr[4];
+
 void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
-    char x='0', y='0', z='0';
-    int a=1, b=2, c=3;
-    int n=0, m=0;
-    int i=1;
+    int s=sec;
     da[1]='e';
     da[2]='a';
     da[3]='t';
@@ -992,41 +998,110 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     dat[3]='t';
     dat[4]='e';
     dat[5]='\0';
+    ans[0]='C';
+    ans[1]='O';
+    ans[2]='R';
+    ans[3]='R';
+    ans[4]='E';
+    ans[5]='C';
+    ans[6]='T';
+    ans[7]='!';
+    ans[8]='!';
+    ans[9]='\0';
+      if(ud->prev_mode!=ud->mode ){ 
+    lcd_clear();  //0123456789ABCDEF
+    astr[0]=' ';
+    astr[1]=' ';
+    astr[2]='*';
+    astr[3]='\0';
+    lcd_putstr(13,0,astr); /*モード2の初期表示*/
+
+    //
+    a=1;
+    b=2;
+    c=3;
+    n=0;
+    m=0;
+    i=3;
+    as=1;
+    //
+    
     /* 3桁の乱数値を生成 */
-    srand(sec);
+    srand(s);
     x = (char)(rand()%10);
     do {
       y = (char)(rand()%10);
     } while(y == x);
     do {
       z = (char)(rand()%10);
-    } while(z == x||z == y);
-    for(;;){
-       /* 不正な入力値をはじく */
+      } while(z == x||z == y);
+    
+  }
+    
+    
+    /*for(i=0;i<8;i++){
+      astrisk[i]=' ';
+    }
+    astrisk[ast]='*';*/
+    //for(;;){
+    if(tmv_flag==TRUE){
 
-    lcd_putdec(0,13,1,a);
-    lcd_putdec(0,14,1,b);
-    lcd_putdec(0,15,1,c);
-     
+    lcd_putdec(13,1,1,a);
+    lcd_putdec(14,1,1,b);
+    lcd_putdec(15,1,1,c);
       switch(i){
       case 1:
 	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
 	case KEY_SHORT_U: /* 上短押し */
-	  a++;
+	  /*if(a==9)
+	    a=0;
+	    else*/
+	    a++;
+  
 	  break;
     
 	case KEY_SHORT_D: /* 下短押し */
-	  a--;
+
+	  	  if(a==0)
+	    a=9;
+	  else
+	    a--;
+
 	  break;
 
 	case KEY_SHORT_L: /* 左短押し */
 	  break;
 	case KEY_SHORT_R: /* 右短押し */
 	  i=2;
+	  astr[0]=' ';
+	  astr[1]='*';
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
 	case KEY_LONG_C:   /* 中央キーの長押し */
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	case KEY_SHORT_C:
+	  /* 「イート」の数 */
+	  n = 0;
+	  if (a == x) n++;
+	  if (b == y) n++;
+	  if (c == z) n++;
+	  da[0]='0'+n;
+	  /* 「バイト」の数 */
+	  m = 0;
+	  if (a == y || a == z) m++;
+	  if (b == x || b == z) m++;
+	  if (c == x || c == y) m++;
+	  dat[0]='0'+m;
+	  if (n != 3){
+	    lcd_putstr(0,1,da);
+	    lcd_putstr(7,1,dat);
+	  }
+	  else{
+	    lcd_clear();
+	    lcd_putstr(0,1,ans);
+	  }
 	  break;
 	}/* /switch */
 	break;
@@ -1035,21 +1110,56 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
 	case KEY_SHORT_U: /* 上短押し */
-	  b++;
+	  /*	  if(b==9)
+	    b=0;
+	  else*/
+	    b++;
 	  break;
     
 	case KEY_SHORT_D: /* 下短押し */
-	  b--;
+	 
+	  if(b==0)
+	    b=9;
+	  else
+	    b--;
 	  break;
 
 	case KEY_SHORT_L: /* 左短押し */
 	  i=1;
+	  astr[1]=' ';
+	  astr[0]='*';
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
 	case KEY_SHORT_R: /* 右短押し */
 	  i=3;
+	  astr[1]=' ';
+	  astr[2]='*';
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
 	case KEY_LONG_C:   /* 中央キーの長押し */
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	  	case KEY_SHORT_C:
+	  /* 「イート」の数 */
+	  n = 0;
+	  if (a == x) n++;
+	  if (b == y) n++;
+	  if (c == z) n++;
+	  da[0]='0'+n;
+	  /* 「バイト」の数 */
+	  m = 0;
+	  if (a == y || a == z) m++;
+	  if (b == x || b == z) m++;
+	  if (c == x || c == y) m++;
+	  dat[0]='0'+m;
+	  if (n != 3){
+	    lcd_putstr(0,1,da);
+	    lcd_putstr(7,1,dat);
+	  }
+	  else{
+	    lcd_clear();
+	    lcd_putstr(0,1,ans);
+	  }
 	  break;
 	}/* /switch */
 	break;
@@ -1058,20 +1168,54 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	switch(ud->sw){  /*モード内でのキー入力別操作*/
 
 	case KEY_SHORT_U: /* 上短押し */
-	  c++;
+	  /* if(c==9)
+	    c=0;
+	    else*/
+	    c++;
 	  break;
     
 	case KEY_SHORT_D: /* 下短押し */
-	  c--;
+	  if(c==0)
+	    c=9;
+	  else
+	    c--;
 	  break;
 
 	case KEY_SHORT_L: /* 左短押し */
 	  i=2;
+	  astr[2]=' ';
+	  astr[1]='*';
+	  lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
 	case KEY_SHORT_R: /* 右短押し */
+	  //	  astr[2]=' ';
+	  //	  astr[0]='*';
+	  //lcd_putstr(13,0,astr); /*モード2の初期表示*/
 	  break;
 	case KEY_LONG_C:   /* 中央キーの長押し */
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
+	  break;
+	case KEY_SHORT_C:
+	  /* 「イート」の数 */
+	  n = 0;
+	  if (a == x) n++;
+	  if (b == y) n++;
+	  if (c == z) n++;
+	  da[0]='0'+n;
+	  /* 「バイト」の数 */
+	  m = 0;
+	  if (a == y || a == z) m++;
+	  if (b == x || b == z) m++;
+	  if (c == x || c == y) m++;
+	  dat[0]='0'+m;
+	  if (n != 3){
+	    lcd_putstr(0,1,da);
+	    lcd_putstr(7,1,dat);
+	  }
+	  else{
+	    lcd_clear();
+	    lcd_putstr(0,1,ans);
+	  }
 	  break;
 	}/* /switch */
 	break;
@@ -1082,31 +1226,11 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     /*  if(KEY_SHORT_U) 
       if (n < 12||n > 987||a == b||a == c||b == c)
 	continue;*/
-        /* 「イート」の数 */
-      n = 0;
-      if (a == x) n++;
-      if (b == y) n++;
-      if (c == z) n++;
-      da[0]='0'+n;
-        /* 「バイト」の数 */
-        m = 0;
-        if (a == y || a == z) m++;
-        if (b == x || b == y) m++;
-        if (c == x || c == y) m++;
-	dat[0]='0'+m;
-        if (n != 3){
-	  lcd_putstr(0,1,da);
-	  lcd_putstr(7,1,dat);
-	}
-        else 
-	  lcd_putstr(0,1,ans);
+
 	 
         
     //return 0;
 }
-
-
-
 
 
 int main(void){
