@@ -1179,6 +1179,7 @@ int n=0, m=0;
 int i=3;
 int as=1;
 int number;
+int count = 0;
 //
 char astr[4];
 
@@ -1222,6 +1223,7 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     m=0;
     i=3;
     as=1;
+    count=0;
     //
     
     /* 3桁の乱数値を生成 */
@@ -1283,6 +1285,7 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
 	case KEY_SHORT_C:
+	  count++;
 	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
@@ -1302,6 +1305,8 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	  else{
 	    lcd_clear();
 	    lcd_putstr(0,1,ans);
+	    lcd_putdec(1,0,3,count);
+	    lcd_putstr(4,0,"ｶｲ");
 	  }
 	  break;
 	}/* /switch */
@@ -1340,7 +1345,8 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	case KEY_LONG_C:   /* 中央キーの長押し */
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
-	  	case KEY_SHORT_C:
+	case KEY_SHORT_C:
+	  count++;
 	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
@@ -1360,6 +1366,9 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	  else{
 	    lcd_clear();
 	    lcd_putstr(0,1,ans);
+	    lcd_putdec(1,0,3,count);
+	    lcd_putstr(4,0,"ｶｲ");
+	    //	    lcd_putstr(1,0,count+"ｶｲ");
 	  }
 	  break;
 	}/* /switch */
@@ -1397,6 +1406,7 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	  ud->mode=MODE_0; /* 次は，モード0に戻る */
 	  break;
 	case KEY_SHORT_C:
+	  count++;
 	  /* 「イート」の数 */
 	  n = 0;
 	  if (a == x) n++;
@@ -1416,6 +1426,9 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
 	  else{
 	    lcd_clear();
 	    lcd_putstr(0,1,ans);
+	    lcd_putdec(1,0,3,count);
+	    lcd_putstr(4,0,"ｶｲ");
+	    //	    lcd_putstr(1,0,count+"ｶｲ");
 	  }
 	  break;
 	}/* /switch */
