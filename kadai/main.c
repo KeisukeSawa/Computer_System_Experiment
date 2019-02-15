@@ -5,6 +5,7 @@ volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
 volatile long sec=86120;
+volatile int countmode4=0;//倉本が追加
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
 
@@ -28,8 +29,12 @@ void int_timera(void){
 	tma_flag = TRUE;
 	//	EI();         /* 必要に応じて EI()を実行  */
 	/*32回呼び出されたら，if文の中が実行されて，sec_flagが有効になる*/
+
+	countmode4++;//倉本が追加
+	
 	if(++count >= 32){
 	      count=0;
+	      countmode4=0;//倉本が追加
 	      sec_flag = TRUE;
 	      sec++;               /* secは，1秒ごとにインクリメントされる*/
 	}
@@ -830,21 +835,31 @@ void do_mode3(UI_DATA* ud){
 
 //mode_4 シューティング（倉本）
 void do_mode4(UI_DATA* ud){
-
-  static int row;
-  static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
+  static int row;//列のコントロール
+  static int player=0x8000;//プレイヤー
+  static int bulletcount=0;//弾の同時発射数
+  static int bulletrow = 0;//弾の横
+  static int bullet = 0x0000;//弾の位置
+  static int bulletflag = 0;//弾の制御
+  static int bulletclear = 0;
+  static int all[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};//全体のコントロール
   int i;
+  static int ran;
   
   if(ud->prev_mode!=ud->mode){
     lcd_clear();
     lcd_putstr(0,0,"MODE4:SHOOTING");
-    lcd_putstr(0,1,"SCORE=0");
     row=3;
-    for(i=0;i<=7;i++){
+    bulletcount=0;
+    for(i=0;i<=7;i++){//全体初期化
       all[i]=0x0000;
     }
-    all[row]=0x8000;
+    bullet=0x0000;
+    bulletrow=0;
+    all[row]=player;
+      srand(sec);
   }
+  
   switch(ud->sw){  /*モード内でのキー入力別操作*/
 
   case KEY_LONG_C:  /* 中央キーの長押し */
@@ -854,20 +869,58 @@ void do_mode4(UI_DATA* ud){
   case KEY_SHORT_R: /* 右短押し  自機の操作*/
     if(row < 7){
       row++;
-      all[row]=all[row] | 0x8000;
-      all[row-1]=all[row-1] & ~(0x8000);
+      all[row]=all[row] | player;
+      all[row-1]=all[row-1] & ~(player);
     }
     break;
 
-  case KEY_SHORT_C:/* 中央キーの短押し  自機の操作*/
+  case KEY_SHORT_L:/* 左短押し  自機の操作*/
     if(row > 0){
       row--;
-      all[row]=all[row] | 0x8000;
-      all[row+1]=all[row+1] & ~(0x8000);
+      all[row]=all[row] | player;
+      all[row+1]=all[row+1] & ~(player);
     }
     break;
+
+  case KEY_SHORT_C:// 中短押し
+    if(bulletcount < 1){
+      bullet=0x4040;
+      bulletrow=row;
+      bulletflag=1;
+      bulletcount++;
+    }
+     break;
     
   }
+
+  //銃弾の制御
+  if(bulletflag==1){
+    bulletflag=0;
+    all[bulletrow]=all[bulletrow] | bullet;
+  }
+  else{
+    all[bulletrow]=all[bulletrow] & ~(bullet);
+    bullet=bullet>>1;
+    all[bulletrow]=all[bulletrow] | bullet;
+  }
+  if(bulletclear==1){
+    all[bulletrow]=all[bulletrow] & ~(bullet);
+    bullet=0x0000;
+    bulletclear=0;
+  }
+  if(bullet==0x0101){
+    bulletclear=1;
+    bulletcount--;
+  }
+  //
+  
+  //
+  ran = rand() % 8;
+  if(countmode4 % 16 == 0){
+    all[ran]=all[ran] | 0x0001;
+  }
+  //
+  
   for(i=0; i<=7; i++){
     matrix_led_pattern[i]=all[i];
   }
