@@ -5,17 +5,11 @@ volatile int tma_flag=FALSE;
 volatile int sec_flag=FALSE;
 volatile int tmv_flag=FALSE;
 volatile long sec=86120;
-volatile int countmode4=0;//倉本が追加
+volatile int countmode4=0;
 volatile int tempo_flag=FALSE;
 int tempo_compare=0;
 
 #define DEBUG          /* デバッグ中は，定義しておく */
-
-// 初期起動時に何も表示されないようにする。
-//static unsigned int matrix_led_pattern[8]=
-//  //{0x007e,0x0011,0x0011,0x0011,0x007e,0x7f00,0x4900,0x4900};
-//{0x7e7e,0x1111,0x1111,0x0011,0x007e,0x7f00,0x4900,0x4900};
-/*列0〜7のデータ(詳細は，過去のリストを読め)*/
 
 static unsigned int matrix_led_pattern[8]=
 {0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
@@ -61,18 +55,11 @@ void int_timerv(void){         /* 約1[msec] ごとに呼び出されるようにする*/
        unsigned int i,p;
        /*スピーカ周りの値*/
 
-       //下記のtempoやtempo_compareをconstでなく，変数にする。
-       //但し，この計算をボトムハーフで毎回実行すると,処理が重いので
-       //トップハーフで計算を行う。
-       //       const int tempo=120;
-       //       const int tempo_compare = 1000/(tempo * 16 / 60);
-       //       const int tempo_compare = 3735 / tempo ;
        static int tempo_count=0;
 
        TCSRV &= ~0xe0;         /* タイマVの割り込みフラグクリア*/
        tmv_flag=TRUE;
-       /*int_timervは，割込禁止のまま,全力動作*/
-
+ 
        /* 1ms ごとにハードリアルタイムで動作させたい処理(matrix_led周り)*/
 
        column=(column+1) & 0x0007; /* column=(column++)&0x0007は，NGです…  */ 
@@ -126,7 +113,7 @@ void timer_init(void){
 
 	IENR1 |= 0x40; 	     /* タイマAの割り込み生成を有効にする*/
 
-	/*タイマVの設定(マニュアルを見て,以下の3行の右辺を書き換えよ)*/
+	/*タイマVの設定*/
 	TCORA = 124;    /*割り込み間隔が約1msになるようにする(125分周)*/
 	TCRV0 = 0x4b;  /*コンペアマッチAで割り込み。その際にカウンタクリア*/
 	TCRV1 = 0x01;  /*クロックは，内部のΦの128分周(16MHz/128)を用いる*/
@@ -140,12 +127,7 @@ void timer_init(void){
 	TCRW = 0xbc;
 }
 
-/* main() などの割り込みルーチン以外の処理は，トップハーフの処理*/
-
-/* User Interface のステートマシン (ここを作り込む)*/
-
 /* 適切なモード名を入れることが望ましいが，MODE_0〜とする。 */
-/* 美しい書き方をするならば，適切なテーブルを持つ必要がある */
 enum MENU_MODE{
   MODE_OUT_OF_MIN=-1,
   MODE_0,
@@ -242,7 +224,6 @@ void do_mode0(UI_DATA* ud){
   static unsigned int matrix_led_pattern[8]={0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000};
 
   if(ud->prev_mode!=ud->mode){  /* 他のモードからモード0に遷移した時に実行 */
-    /*必要なら，何らかのモードの初期化処理*/
     lcd_putstr(0,0,"MODE0->MODE0"); /*モード0の初期表示*/
     next_mode_data=MODE_0;
     prev_next_mode_data=MODE_0;
@@ -306,17 +287,7 @@ void do_mode0(UI_DATA* ud){
     lcd_putstr(0,0,"MODE0->MODE");
     lcd_putstr(11,0,str);
 
-    /*コメント：ここでは，LCDの再描画処理を1秒ごとに行っている。        */
-    /*これは，万が一，予期せぬノイズで，LCDの表示に誤動作が発生しても， */
-    /*1秒後には，回復させるという効果を期待している。ハードの世界では， */
-    /*いくら工夫しても，防ぎようが無いノイズがあったりするのです…。    */
-    /*不具合の発生確率は，「コストをある程度かければ」下げることが可能。*/
-
-    /*ついでに，matrix_ledのスクロールも行ってみる*/
     if(matrix_scroll!=FALSE){ 
-      /*FALSEでチェックしているのは，0でのチェックの方が一般に高速だから*/
-      /*なお，下記の関数は，単なるデバッグアウトなので，実行をし続けたら*/
-      /*フォントテーブルを抜け出してしまい，表示が変になります。*/
       matrix_font_debug_out_sample(matrix_led_pattern);
     }
 
@@ -325,7 +296,7 @@ void do_mode0(UI_DATA* ud){
 
 }
 
-  /*キッチンタイマーのアルゴリズムの一部(山西 mode1)*/
+/*MODE1:キッチンタイマーのアルゴリズムの一部 */
 void mode1_time(int set){
   static int m,s,l=0,n=0;
   if(set!=0){
@@ -354,9 +325,10 @@ void mode1_time(int set){
   }
 }
 
+
+/* MODE1:キッチンタイマー */
 void do_mode1(UI_DATA* ud){
   if(ud->prev_mode!=ud->mode){  /* 他のモード遷移した時に実行 */
-    /*必要なら，何らかのモードの初期化処理*/
     lcd_clear();
     lcd_putstr(0,0,"MODE1"); /*モード1の初期表示*/
     lcd_putstr(0,1,""); /*モード1の初期表示*/
@@ -389,18 +361,15 @@ void do_mode1(UI_DATA* ud){
 
 }
 
-/*時計表示のアルゴリズムの一部*/
+/* MODE2:時計表示のアルゴリズムの一部 */
 void show_sec(void){
   char data[9];
   long h,m,s;
-  long sec_hold=sec; /* 値を生成している最中に，secが変わると嫌なので，   */
-                    /* ここで，secの値を捕まえる。secの値は，ボトムハーフ*/
-                    /* で変化させているので，運が悪いと処理中に変化する。*/
+  long sec_hold=sec; 
   
   s=sec_hold % 60;
-  m=(sec_hold / 60); /* ここで，hの値の健全性は，検証していないからね。*/
+  m=(sec_hold / 60);
   h=(sec_hold / 3600);
-  /* ヒントは，「secは，int型」*/
   data[0]='0'+h/10;
   data[1]='0'+h%10;
   if(sec_hold>3600){
@@ -426,7 +395,7 @@ void show_sec(void){
 }
 
 
-//藤井がdo_mode2まで使ってます
+/* MODE2:24時間時計 */
 char astrisk[9];
 char settime[9];
 int tim[9];
@@ -595,7 +564,7 @@ long sec_henkou=0;
   }
 }
 
-
+/* MODE3：記憶力ゲーム */
 void do_mode3(UI_DATA* ud){
   static int flag;  /* キー入力の有効 */
   static int count;
@@ -642,9 +611,6 @@ void do_mode3(UI_DATA* ud){
       matrix_led_pattern[i]=0x0000;
   }
 
-  /*モード1は，真中ボタンが押されたら，MODE0に戻るだけの単純な処理*/
-  /*それに，beta2のバージョンでは，音楽再生機能の起動部分を追加*/
-  /*但し，main関数内で，キーのデバッグ表示を行っている*/
   if(sec_flag==TRUE){ /* 1秒ごとの処理*/
     switch(flag){
     case 0:
@@ -833,7 +799,7 @@ void do_mode3(UI_DATA* ud){
 }
 
 
-//mode_4 シューティング（倉本）
+/* MODE4:シューティングゲーム */
 void do_mode4(UI_DATA* ud){
   static int row;//列のコントロール
   static int player=0x8000;//プレイヤー
@@ -927,9 +893,7 @@ void do_mode4(UI_DATA* ud){
 }
 
 
-
-
-// MODE_5（挟み将棋）
+/* MODE5:はさみ将棋 */
 void do_mode5(UI_DATA* ud){
 
   static int row;
@@ -963,6 +927,18 @@ void do_mode5(UI_DATA* ud){
       ud->mode=MODE_0; /* 次は，モード0に戻る */
       break;
     
+    // コマの初期化
+    case KEY_SHORT_R: /* 右長押し*/
+      koma_red[8]={0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001,0x0001};
+      koma_green[8]={0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000,0x8000};
+      lcd_clear();
+      lcd_putstr(0,0,"MODE5:ﾊｻﾐｼｮｳｷﾞ");
+      lcd_putstr(0,1,"green");
+      player_mode = 11; 
+      player_row = 0;
+      player_line = 0;
+      break;
+
     case KEY_SHORT_R: /* 右短押し*/
       if(row < 7){
       int red = 0x0000 | (1 << (line));
@@ -972,6 +948,7 @@ void do_mode5(UI_DATA* ud){
       play[row-1] = 0x0000;
       }
       break;
+
 
   case KEY_SHORT_L:/* 左キーの短押し */
     if(row > 0){
@@ -1002,6 +979,9 @@ void do_mode5(UI_DATA* ud){
     break;
 
   case KEY_SHORT_C: /* 中央キーの短押し */
+
+    // player_mode:11,12は緑のコマの操作
+
     if(player_mode == 11){
       player_row = row;
       player_line = line;
@@ -1049,7 +1029,7 @@ void do_mode5(UI_DATA* ud){
 
 	  if( ( (koma_red[row+1] >> line ) & 0x0001 ) == 0x0001){
 
-	    int shift = shift_table_red[line];
+	    int shift = shift_table_red[line]; 
 	    koma_red[row+1] = koma_red[row+1] & shift;
 	  
 	  }
@@ -1060,13 +1040,13 @@ void do_mode5(UI_DATA* ud){
 
       //判定（上下の2つ）
       if(line != 0 && line != 7){
-	int up = (koma_red[line+1] >> row ) & 0x0001; 
-	int down = (koma_red[line-1] >> row ) & 0x0001;
+	int up = (koma_red[row] >> (line-1) ) & 0x0001; 
+	int down = (koma_red[row] >> (line+1) ) & 0x0001;
 
 	if(up == 0x0001 && down == 0x0001){
 
-	   int shift = shift_table_green[row];
-	   koma_green[line] = koma_green[line] & shift;
+	   int shift = shift_table_green[line];
+	   koma_green[row] = koma_green[row] & shift;
 
 	}
 	
@@ -1076,9 +1056,9 @@ void do_mode5(UI_DATA* ud){
       if(line != 0 && line != 1){
 	if( ( (koma_green[row] >>(line-2) ) & 0x0100 ) == 0x0100 ){
 
-	  if( ( (koma_red[row] >> (row-1) ) & 0x0001 ) == 0x0001){
+	  if( ( (koma_red[row] >> (line-1) ) & 0x0001 ) == 0x0001){
 
-	    int shift = shift_table_red[row];
+	    int shift = shift_table_red[line];
 	    koma_red[row] = koma_red[row] & shift;
 	  
 	  }
@@ -1093,7 +1073,7 @@ void do_mode5(UI_DATA* ud){
 
 	  if( ( (koma_red[row] >> (line+1) ) & 0x0001 ) == 0x0001){
 
-	    int shift = shift_table_red[row];
+	    int shift = shift_table_red[line];
 	    koma_red[row] = koma_red[row] & shift;
 	  
 	  }
@@ -1102,17 +1082,17 @@ void do_mode5(UI_DATA* ud){
 	
       }
 
-
-      
-      
       player_mode = 21;
 
       lcd_clear();
-      lcd_putstr(0,0,"MODE5:syougi");
+      lcd_putstr(0,0,"MODE5:ﾊｻﾐｼｮｳｷﾞ");　
       lcd_putstr(0,1,"red");
       
       
     }
+
+    // player_mode:21,22は赤のコマの操作
+
     else if(player_mode == 21){
       player_row = row;
       player_line = line;
@@ -1128,7 +1108,7 @@ void do_mode5(UI_DATA* ud){
       //判定（隣り合う2つ）
       if(row != 0 && row != 7){
 	int right = (koma_green[row+1] >> line ) & 0x0100; 
-	int left = (koma_red[row-1] >> line ) & 0x0100;
+	int left = (koma_green[row-1] >> line ) & 0x0100;
 
 	if(right == 0x0100 && left == 0x0100){
 
@@ -1169,14 +1149,54 @@ void do_mode5(UI_DATA* ud){
 	
       }
 
-      
+      //判定（上下の2つ）
+      if(line != 0 && line != 7){
+	int up = (koma_green[row] >> (line-1) ) & 0x0100; 
+	int down = (koma_green[row] >> (line+1) ) & 0x0100;
 
+	if(up == 0x0100 && down == 0x0100){
+
+	   int shift = shift_table_red[line];
+	   koma_red[row] = koma_red[row] & shift;
+
+	}
+	
+      }
       
- 
+      // 2つ上が赤
+      if(line != 0 && line != 1){
+	if( ( (koma_red[row] >>(line-2) ) & 0x0001 ) == 0x0001 ){
+
+	  if( ( (koma_green[row] >> (line-1) ) & 0x0100 ) == 0x0100){
+
+	    int shift = shift_table_green[line];
+	    koma_green[row] = koma_green[row] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+      // 2つ下が赤
+      if(line != 6 && line != 7){
+	if( ( (koma_red[row] >> (line+2) ) & 0x0001 ) == 0x0001 ){
+
+	  if( ( (koma_green[row] >> (line+1) ) & 0x0100 ) == 0x0100){
+
+	    int shift = shift_table_green[line];
+	    koma_green[row] = koma_green[row] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
       player_mode = 11;
 
       lcd_clear();
-      lcd_putstr(0,0,"MODE5:syougi");
+      lcd_putstr(0,0,"MODE5:ﾊｻﾐｼｮｳｷﾞ");
       lcd_putstr(0,1,"green");
       
     }
@@ -1195,9 +1215,7 @@ void do_mode5(UI_DATA* ud){
 
 }
 
-
-
-// 藤井　ピンポンゲーム
+/* MODE6:ピンポンゲームで使用する変数 */
 int ball_x,ball_y=2;//ボールのx座標とy座標
 int ita=3;  //下の部分の左側の座標
 int hajime_flag=FALSE;
@@ -1210,6 +1228,7 @@ int level=1,level_flag=FALSE;
 int pinpon_pattern[]={
   0x0000,0x4000,0x2000,0x1000,0x0800,0x0400,0x0200,0x0100};
 
+/* MODE6:ピンポンゲーム */
 void do_mode6(UI_DATA* ud){
   int i=0;
   if(ud->prev_mode!=ud->mode ){ 
@@ -1386,13 +1405,10 @@ void do_mode6(UI_DATA* ud){
       }
 }
 
-
-// char da[]="ｲｰﾄ";
-
+/* MODE7:数あてゲームで使用する変数 */
 char da[5];
 char dat[6];
 char ans[10];
-//
 char x='0', y='0', z='0';
 int a=1, b=2, c=3;
 int n=0, m=0;
@@ -1403,7 +1419,8 @@ int count = 0;
 //
 char astr[4];
 
-void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
+/* MODE7:数あてゲーム */
+void do_mode7(UI_DATA* ud){
     int s=sec;
     da[1]='e';
     da[2]='a';
@@ -1458,19 +1475,11 @@ void do_mode7(UI_DATA* ud){   //吉武　kazuatege-mu
     
   }
     
-    
-    /*for(i=0;i<8;i++){
-      astrisk[i]=' ';
-    }
-    astrisk[ast]='*';*/
-    //for(;;){
     if(tmv_flag==TRUE){
 
     lcd_putdec(13,1,1,a);
     lcd_putdec(14,1,1,b);
     lcd_putdec(15,1,1,c);
-    // number=((int)x)*100 + ((int)y)*10 + ((int)z);
-    // lcd_putdec(1,0,3,number);
 
       switch(i){
       case 1:
@@ -1689,9 +1698,6 @@ int main(void){
 
 	timer_init();   /* タイマの初期設定を実行(EIの直前に実行) */
         EI();	        /* 割り込みを許可  */
-
-	//半角カタカナ一覧:入力できないなら，ここからコピペせよ。
-	//ｱｲｳｴｵ ｶｷｸｹｺ ｻｼｽｾｿ ﾀﾁﾂﾃﾄ ﾅﾆﾇﾈﾉ ﾊﾋﾌﾍﾎ ﾏﾐﾑﾒﾓ ﾗﾘﾙﾚﾛ ﾔﾕﾖ ﾜｦﾝ ﾞﾟ ｯ ｧｨｩｪｫ
 	
 	//最初は，モード0から実行を想定。
 	lcd_putstr(0,0,"MODE0->MODE0");
@@ -1716,18 +1722,6 @@ int main(void){
 	  if(tmv_flag==TRUE){
 
 #if 0
-	    /*スピーカのダイレクトコントロールは，beta2から*/
-	    /*できないようになりました。*/
-	    /*スピーカ用のポートは，タイマWというタイマから*/
-	    /*タイマ出力を直接出力することになります*/
-	    /*スピーカ用の関数 snd_mng(),snd_play(),snd_stop()などを*/
-	    /*活用すること*/
-
-	    /*とりあえず，モード1の時に，上のキーが短押しされたら，   */
-	    /*(正確には，短押しの離された時に)，500Hzの音を短く出す   */
-	    /*ようなスピーカのサンプルコード。                        */
-	    /*スマートにスピーカを鳴らすのだったら，どこかで， フラグ */
-	    /*が立ったら， FLIP_SPEAKER_DIRECT_CONTROL();を実行する   */
 	    if(ui_data!=NULL && ui_data->mode==MODE_1 && sw==KEY_SHORT_U){
 		FLIP_SPEAKER_DIRECT_CONTROL();
 	    }
