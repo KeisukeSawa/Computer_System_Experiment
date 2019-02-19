@@ -1058,6 +1058,52 @@ void do_mode5(UI_DATA* ud){
 	
       }
 
+      //判定（上下の2つ）
+      if(line != 0 && line != 7){
+	int up = (koma_red[line+1] >> row ) & 0x0001; 
+	int down = (koma_red[line-1] >> row ) & 0x0001;
+
+	if(up == 0x0001 && down == 0x0001){
+
+	   int shift = shift_table_green[row];
+	   koma_green[line] = koma_green[line] & shift;
+
+	}
+	
+      }
+      
+      // 2つ上が緑
+      if(line != 0 && line != 1){
+	if( ( (koma_green[row] >>(line-2) ) & 0x0100 ) == 0x0100 ){
+
+	  if( ( (koma_red[row] >> (row-1) ) & 0x0001 ) == 0x0001){
+
+	    int shift = shift_table_red[row];
+	    koma_red[row] = koma_red[row] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+      // 2つ下が緑
+      if(line != 6 && line != 7){
+	if( ( (koma_green[row] >> (line+2) ) & 0x0100 ) == 0x0100 ){
+
+	  if( ( (koma_red[row] >> (line+1) ) & 0x0001 ) == 0x0001){
+
+	    int shift = shift_table_red[row];
+	    koma_red[row] = koma_red[row] & shift;
+	  
+	  }
+	
+	}
+	
+      }
+
+
+      
       
       player_mode = 21;
 
@@ -1122,6 +1168,10 @@ void do_mode5(UI_DATA* ud){
 	}
 	
       }
+
+      
+
+      
  
       player_mode = 11;
 
